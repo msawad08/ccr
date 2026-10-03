@@ -435,3 +435,151 @@ export function importBackupJSON(jsonStr: string): boolean {
     return false;
   }
 }
+
+/**
+ * Push all local cards, custom templates, and transactions up to Supabase for the signed-in user
+ */
+export async function pushLocalDataToSupabase(userId: string): Promise<{ success: boolean; error?: string }> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return { success: false, error: 'Supabase client not initialized' };
+
+  try {
+    const userCards = loadUserCards();
+    const cardTemplates = loadCardTemplates().filter((t) => t.isCustom);
+    const transactions = loadTransactions();
+
+    // 1. Sync Custom Card Templates
+    for (const t of cardTemplates) {
+      await supabase.from('card_templates').upsert({
+        id: t.id,
+        user_id: userId,
+        template_json: t,
+        is_custom: true,
+        updated_at: new Date().toISOString(),
+      });
+    }
+
+    // 2. Sync User Cards
+    for (const c of userCards) {
+      await supabase.from('user_cards').upsert({
+        id: c.id,
+        user_id: userId,
+        card_id: c.cardTemplateId,
+        nickname: c.nickname,
+        last4: c.last4,
+        billing_cycle_day: c.billingCycleDay,
+        template_override: c.templateOverride || null,
+      });
+    }
+
+    // 3. Sync Transactions
+    for (const txn of transactions) {
+      await supabase.from('transactions').upsert({
+        id: txn.id,
+        user_id: userId,
+        user_card_id: txn.userCardId,
+        rule_id: txn.ruleId,
+        transaction_date: txn.transactionDate,
+        posting_date: txn.postingDate || null,
+        merchant: txn.merchant,
+        amount: txn.amount,
+        is_refund: txn.isRefund,
+        related_transaction_id: txn.relatedTransactionId || null,
+        notes: txn.notes || null,
+      });
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Failed to push data to Supabase:', err);
+    return { success: false, error: err?.message || 'Upload failed' };
+  }
+}
+
+/**
+ * Fetch cards, custom templates, and transactions from Supabase for the signed-in user and update local cache
+ */
+export async function fetchUserDataFromSupabase(userId: string): Promise<{ success: boolean; hasData: boolean; error?: string }> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return { success: false, hasData: false, error: 'Supabase client not initialized' };
+
+  try {
+    // 1. Fetch user cards
+    const { data: dbCards, error: cardsErr } = await supabase
+      .from('user_cards')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (cardsErr) throw cardsErr;
+
+    // 2. Fetch custom templates
+    const { data: dbTemplates, error: tmplErr } = await supabase
+      .from('card_templates')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (tmplErr) throw tmplErr;
+
+    // 3. Fetch transactions
+    const { data: dbTxns, error: txnsErr } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('transaction_date', { ascending: false });
+
+    if (txnsErr) throw txnsErr;
+
+    const hasData = Boolean(dbCards && dbCards.length > 0);
+
+    if (hasData) {
+      // Map user cards
+      const mappedCards: UserCard[] = dbCards.map((c: any) => ({
+        id: c.id,
+        userId: c.user_id,
+        cardTemplateId: c.card_id,
+        nickname: c.nickname || '',
+        last4: c.last4 || undefined,
+        billingCycleDay: c.billing_cycle_day || 1,
+        templateOverride: c.template_override || undefined,
+        createdAt: c.created_at,
+      }));
+      saveUserCards(mappedCards);
+
+      // Map custom templates
+      if (dbTemplates && dbTemplates.length > 0) {
+        const currentTemplates = loadCardTemplates();
+        const map = new Map<string, CardTemplate>(currentTemplates.map((t) => [t.id, t]));
+        for (const t of dbTemplates) {
+          if (t.template_json) {
+            map.set(t.id, t.template_json as CardTemplate);
+          }
+        }
+        saveCardTemplates(Array.from(map.values()));
+      }
+
+      // Map transactions
+      if (dbTxns) {
+        const mappedTxns: Transaction[] = dbTxns.map((t: any) => ({
+          id: t.id,
+          userId: t.user_id,
+          userCardId: t.user_card_id,
+          ruleId: t.rule_id,
+          transactionDate: t.transaction_date,
+          postingDate: t.posting_date || null,
+          merchant: t.merchant,
+          amount: parseFloat(t.amount) || 0,
+          isRefund: Boolean(t.is_refund),
+          relatedTransactionId: t.related_transaction_id || null,
+          notes: t.notes || undefined,
+          createdAt: t.created_at,
+        }));
+        saveTransactions(mappedTxns);
+      }
+    }
+
+    return { success: true, hasData };
+  } catch (err: any) {
+    console.error('Failed to fetch data from Supabase:', err);
+    return { success: false, hasData: false, error: err?.message || 'Fetch failed' };
+  }
+}

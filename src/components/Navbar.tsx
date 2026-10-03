@@ -10,6 +10,8 @@ interface NavbarProps {
   onOpenSettings: () => void;
   onOpenMonthlyReport?: () => void;
   isSupabaseConfigured: boolean;
+  storageMode?: 'local' | 'supabase';
+  userEmail?: string | null;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -19,6 +21,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSettings,
   onOpenMonthlyReport,
   isSupabaseConfigured,
+  storageMode = 'local',
+  userEmail,
 }) => {
   return (
     <header className="sticky top-0 z-30 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
@@ -47,21 +51,30 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={onOpenSettings}
             className={`hidden md:flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
-              isSupabaseConfigured
+              storageMode === 'supabase' && userEmail
                 ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300 hover:bg-emerald-900/40'
+                : storageMode === 'supabase'
+                ? 'bg-indigo-950/40 border-indigo-800/60 text-indigo-300 hover:bg-indigo-900/40'
                 : 'bg-zinc-900 border-zinc-700/80 text-zinc-300 hover:bg-zinc-800'
             }`}
-            title="Click to view storage & sync settings"
+            title="Click to view storage, auth & sync settings"
           >
-            {isSupabaseConfigured ? (
-              <>
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Supabase Cloud</span>
-              </>
+            {storageMode === 'supabase' ? (
+              userEmail ? (
+                <>
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="max-w-[120px] truncate">{userEmail}</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Sign In (Supabase)</span>
+                </>
+              )
             ) : (
               <>
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>Demo Mode (Local)</span>
+                <span>Local (Device Only)</span>
               </>
             )}
           </button>

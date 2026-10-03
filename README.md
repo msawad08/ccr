@@ -31,25 +31,40 @@ No reward rules or bank terms are hardcoded — every card, category multiplier,
 * **Live Airport Lounge Pass Tracker:** Computes unlocked passes and remaining spend required in the current period based on historical transactions.
 * **Granular Rule Inclusion/Exclusion:** Milestones allow selective inclusion (e.g., utilities count toward a milestone spend while fuel and wallet transactions are excluded).
 
-### 3. Interactive Daily Cap Inspector & Timeline Charts
+### 3. Storage & Sync Options: Local Storage vs. Supabase Cloud Sync
+* **Choice of Storage Mode in UI:**
+  * **Local Storage (Device-Specific Only):** Fast, zero-setup, full privacy. All data is kept directly in your browser. *(Note: Clearing browser cookies or cache will erase records; does not sync across devices).*
+  * **Supabase Cloud / Local Server Sync:** Automatic cloud backup to PostgreSQL protected with **Row Level Security (RLS)**. Access your same cards and live cap meters seamlessly across your phone, tablet, and PC.
+* **Built-in Authentication:**
+  * Email & Password sign-up and sign-in.
+  * Passwordless Magic Link authentication.
+  * Google OAuth support.
+  * Auto-sync and manual "Sync Now" buttons.
+* **Zero UI Credentials Clutter:** Supabase URLs and public keys are configured securely via `.env.local` — no sensitive credentials are typed into browser form fields.
+
+### 4. Excel (XLSX), CSV, and JSON5 Export / Import
+* **Microsoft Excel (.xlsx) Export:** One-click export to a multi-sheet spreadsheet containing:
+  * **Transactions Sheet:** Formatted ledger with dates, cards, merchants, category rules, base/bonus/total points, and monetary values in INR.
+  * **My Cards Sheet:** Wallet inventory with nicknames, issuers, networks, and cycle days.
+  * **Summary Sheet:** Net spend volumes, refunds, and overall reward totals.
+* **JSON5 Full Backup & Cross-Device Import:** Export your entire database (cards, custom templates, multipliers, caps, transactions) as `.json5` to backup or restore on any other device.
+* **Universal CSV Export:** Direct transaction ledger export for Google Sheets or custom financial tools.
+
+### 5. Interactive Daily Cap Inspector & Timeline Charts
 * **Day-by-Day Cap Inspection:** Interactive date selector to evaluate daily cap utilization for any day of the month.
 * **Active Daily Activity Bar Chart:** Visual timeline highlighting active spend days, daily cap headroom, and peak spend dates.
 * **Exceeded Cap Alerts:** Instant visual indicators when daily or monthly thresholds are breached.
 
-### 4. Multi-Month Cap Comparison & Utilization Report
+### 6. Multi-Month Cap Comparison & Utilization Report
 * **Comparative Metric Strip:** Side-by-side view of total spends, refunds, points accrued, and reward value in INR across past months.
 * **Cap Status Highlights:** Identifies which months reached cap (`Cap Reached`), came close (`Near Cap`), or remained underutilized.
 * **One-Click Jump:** Direct navigation to inspect historical months in detail.
 
-### 5. AI Template Studio (JSON5) & Prompt Generator
+### 7. AI Template Studio (JSON5) & Prompt Generator
 * **One-Click Gemini / ChatGPT Prompt:** Generates a complete prompt tailored to any credit card name with the exact CardCap schema specification.
 * **JSON5 Specification:** Supports comments (`//`), unquoted keys, and trailing commas from LLM outputs without syntax errors.
 * **Download Schema (.json5):** Export the schema specification file to reference offline or upload to LLMs.
 * **Export / Import:** Instantly copy existing cards as JSON5 or paste new AI-generated templates to install them immediately.
-
-### 6. Local-First Offline Storage + Cloud Sync
-* Works completely offline out-of-the-box using `localStorage`.
-* Seamlessly syncs with Supabase PostgreSQL when credentials (`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`) are provided.
 
 ---
 
@@ -57,7 +72,7 @@ No reward rules or bank terms are hardcoded — every card, category multiplier,
 
 ### Prerequisites
 * [Node.js](https://nodejs.org/) (v18.17 or higher, v20+ recommended)
-* `npm` or `pnpm` or `yarn`
+* [Docker Desktop](https://www.docker.com/) (Optional: only needed for local Supabase Docker testing)
 
 ### Installation
 
@@ -72,17 +87,12 @@ No reward rules or bank terms are hardcoded — every card, category multiplier,
    npm install
    ```
 
-3. **Set up environment variables (Optional for Cloud Sync):**
+3. **Set up environment variables:**
    Copy `.env.example` to `.env.local`:
    ```bash
    cp .env.example .env.local
    ```
-   Add your Supabase project URL and anon key if you wish to enable cloud sync:
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-   ```
-   *(If omitted, CardCap automatically runs in full offline local storage mode).*
+   *(If you wish to run in Local Storage Mode without Supabase, you can leave `.env.local` empty).*
 
 4. **Run the development server:**
    ```bash
@@ -98,11 +108,52 @@ No reward rules or bank terms are hardcoded — every card, category multiplier,
 
 ---
 
+## 🐳 Testing with Local Supabase Docker & Auth
+
+CardCap supports a complete, local offline Supabase stack powered by Docker.
+
+### Method 1: Using Official Supabase CLI (Recommended)
+
+1. **Start the local Docker containers:**
+   ```bash
+   npx supabase start
+   ```
+   This automatically downloads and starts PostgreSQL, Supabase Auth (GoTrue), Kong API Gateway, Supabase Studio, and Inbucket.
+
+2. **Copy local credentials to `.env.local`:**
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+   ```
+
+3. **Endpoints available:**
+   * **App:** [http://localhost:3000](http://localhost:3000)
+   * **Supabase Studio (Database Dashboard):** [http://127.0.0.1:54323](http://127.0.0.1:54323)
+   * **Inbucket (Email Sandbox to view sign-up & magic link emails):** [http://127.0.0.1:54324](http://127.0.0.1:54324)
+
+4. **Stop local Supabase:**
+   ```bash
+   npx supabase stop
+   ```
+
+### Method 2: Using Docker Compose
+
+You can also run the bundled `docker-compose.yml`:
+```bash
+docker compose up -d
+```
+* **PostgreSQL:** Port `54322` (pre-initialized with `supabase/schema.sql`)
+* **Inbucket Email Catcher:** [http://localhost:54324](http://localhost:54324)
+
+For detailed information, check the [Local Supabase Docker Guide](supabase/LOCAL_DOCKER_GUIDE.md).
+
+---
+
 ## 🤖 Creating Cards with AI (Gemini / ChatGPT)
 
 Adding a new card or updating an existing one takes under 60 seconds:
 
-1. Open CardCap in your browser and click **Card Rules** in the top navigation bar.
+1. Open CardCap in your browser and click **Rules & Templates** in the top navigation bar.
 2. Navigate to the **AI Studio (JSON5)** tab.
 3. Type the card name (e.g. `Axis Atlas`, `Tata Neu Infinity`, or `Infinia Metal`) and click **Copy AI Prompt**.
 4. Paste the prompt into [Google Gemini](https://gemini.google.com) or [ChatGPT](https://chatgpt.com).
@@ -140,10 +191,11 @@ Adding a new card or updating an existing one takes under 60 seconds:
 * **Framework:** [Next.js 16](https://nextjs.org/) (App Router, Turbopack)
 * **UI Library:** [React 19](https://react.dev/)
 * **Styling:** [Tailwind CSS 4](https://tailwindcss.com/)
+* **Spreadsheet & Data Export:** [SheetJS (xlsx)](https://docs.sheetjs.com/)
+* **JSON5 Parsing:** [json5](https://json5.org/)
 * **Icons:** [Lucide React](https://lucide.dev/)
 * **Date Utilities:** [date-fns](https://date-fns.org/)
-* **JSON5 Parsing:** [json5](https://json5.org/)
-* **Database & Auth:** [Supabase](https://supabase.com/) (Optional cloud sync)
+* **Database & Auth:** [Supabase](https://supabase.com/) (Cloud or Local Docker)
 * **Confetti Animations:** [canvas-confetti](https://www.npmjs.com/package/canvas-confetti)
 
 ---
@@ -152,6 +204,7 @@ Adding a new card or updating an existing one takes under 60 seconds:
 
 ```
 ccr/
+├── docker-compose.yml          # Standalone Docker Compose stack for local testing
 ├── src/
 │   ├── app/                    # Next.js App Router (page.tsx, layout.tsx, globals.css)
 │   ├── components/             # Reusable UI Components
@@ -160,21 +213,25 @@ ccr/
 │   │   ├── GenericCardDashboard.tsx     # Dynamic dashboard for any card
 │   │   ├── MilestoneCardSection.tsx     # Quarterly/annual loyalty & lounge tracker
 │   │   ├── MonthlyReportModal.tsx       # Multi-month comparative cap utilization
-│   │   ├── Navbar.tsx                   # Top navigation with quick actions
-│   │   ├── QuickTransactionModal.tsx    # Fast transaction entry modal
-│   │   ├── RegaliaGoldDashboard.tsx     # Specialized Regalia Gold dashboard
+│   │   ├── Navbar.tsx                   # Top navigation with storage & sync indicators
+│   │   ├── SettingsModal.tsx            # Storage mode switcher, Auth & Excel/JSON5 export
+│   │   ├── TransactionEntryModal.tsx    # Transaction entry with live calculation
 │   │   └── TransactionLedger.tsx        # Transaction history & refund manager
 │   ├── data/
 │   │   └── defaultTemplates.ts # Default bank card templates (HDFC, Amex, SBI)
 │   ├── lib/
+│   │   ├── exportImportHelper.ts # Excel (.xlsx), CSV, and JSON5 export/import
 │   │   ├── json5CardHelper.ts  # JSON5 schema spec, Gemini prompt generator, parser
 │   │   ├── rewardsEngine.ts    # Core reward calculation, capping & milestone engine
 │   │   ├── storage.ts          # Local-first repository & Supabase sync
-│   │   ├── supabase.ts         # Supabase client initialization
+│   │   ├── supabaseClient.ts   # Supabase client, auth methods, and mode management
 │   │   └── utils.ts            # Formatting helpers (INR currency, points)
 │   └── types/
 │       └── card.ts             # TypeScript interfaces for rules, caps, milestones
 ├── supabase/
+│   ├── LOCAL_DOCKER_GUIDE.md   # Step-by-step local Supabase Docker testing guide
+│   ├── config.toml             # Supabase CLI local configuration
+│   ├── migrations/             # Database migrations
 │   └── schema.sql              # Supabase PostgreSQL schema with RLS policies
 ├── LICENSE                     # MIT License
 ├── package.json

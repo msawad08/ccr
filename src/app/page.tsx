@@ -33,9 +33,16 @@ import {
   deleteTransaction,
   resetAllToSampleData,
   getCurrentYearMonth,
+  fetchUserDataFromSupabase,
 } from '../lib/storage';
 import { evaluateCardPeriodSummary } from '../lib/rewardsEngine';
-import { getSupabaseConfig } from '../lib/supabaseClient';
+import {
+  isSupabaseConfigured as checkSupabaseConfigured,
+  getStorageMode,
+  getCurrentUser,
+  onAuthStateChange,
+} from '../lib/supabaseClient';
+import { User } from '@supabase/supabase-js';
 
 export default function Home() {
   const [isClient, setIsClient] = useState(false);
@@ -43,6 +50,9 @@ export default function Home() {
   const [cardTemplates, setCardTemplates] = useState<CardTemplate[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [activeUserCardId, setActiveUserCardId] = useState<string>('');
+
+  const [storageMode, setStorageMode] = useState<'local' | 'supabase'>('local');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const [yearMonth, setYearMonth] = useState(() => getCurrentYearMonth());
   const [trackingBasis, setTrackingBasis] = useState<DateTrackingBasis>('posting_date');
@@ -60,7 +70,27 @@ export default function Home() {
   // Initialize data on client load
   useEffect(() => {
     setIsClient(true);
+    const mode = getStorageMode();
+    setStorageMode(mode);
     refreshData();
+
+    if (checkSupabaseConfigured()) {
+      getCurrentUser().then((user) => {
+        setCurrentUser(user);
+        if (user && mode === 'supabase') {
+          fetchUserDataFromSupabase(user.id).then(() => refreshData());
+        }
+      });
+
+      const unsub = onAuthStateChange((user) => {
+        setCurrentUser(user);
+        if (user && getStorageMode() === 'supabase') {
+          fetchUserDataFromSupabase(user.id).then(() => refreshData());
+        }
+      });
+
+      return () => unsub();
+    }
   }, []);
 
   const refreshData = () => {
@@ -193,7 +223,7 @@ export default function Home() {
     );
   }
 
-  const isSupabaseConfigured = !!getSupabaseConfig();
+  const isConfigured = checkSupabaseConfigured();
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-amber-500 selection:text-zinc-950">
@@ -210,7 +240,9 @@ export default function Home() {
         onOpenWallet={() => setIsWalletOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenMonthlyReport={() => setIsMonthlyReportOpen(true)}
-        isSupabaseConfigured={isSupabaseConfigured}
+        isSupabaseConfigured={isConfigured}
+        storageMode={storageMode}
+        userEmail={currentUser?.email}
       />
 
       {/* Main Content Area */}
@@ -331,9 +363,16 @@ export default function Home() {
 
       <SettingsModal
         isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
+        onClose={() => {
+          setIsSettingsOpen(false);
+          setStorageMode(getStorageMode());
+          refreshData();
+        }}
         onResetToSampleData={handleResetAllSamples}
-        onDataImported={refreshData}
+        onDataImported={() => {
+          setStorageMode(getStorageMode());
+          refreshData();
+        }}
       />
 
       {activeCardTemplate && (
