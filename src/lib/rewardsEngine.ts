@@ -2,6 +2,7 @@ import {
   CardTemplate,
   Transaction,
   RewardRule,
+  MilestoneRule,
   PeriodSummary,
   CapProgress,
   MilestoneProgress,
@@ -57,8 +58,10 @@ export function computeRawBasePoints(
 
   const positiveAmount = Math.abs(amount);
 
-  if (mode === 'proportional') {
-    return (positiveAmount / spendStep) * pointsPerStep;
+  if (mode === 'direct_percentage') {
+    return Number(((positiveAmount * pointsPerStep) / spendStep).toFixed(2));
+  } else if (mode === 'proportional') {
+    return Number(((positiveAmount / spendStep) * pointsPerStep).toFixed(2));
   } else if (mode === 'round') {
     return Math.round(positiveAmount / spendStep) * pointsPerStep;
   } else {
@@ -177,28 +180,39 @@ export function calculateTransactionReward(
   let cappedMonthly = false;
   let capWarning: string | null = null;
 
-  // Handle total points capped categories (e.g. Grocery 2,000 RP, Utility 2,000 RP, Insurance 2,000 RP)
-  if (capGroup?.capsTotalPoints && capGroup.monthlyBonusCap) {
-    const remainingMonthly = Math.max(0, capGroup.monthlyBonusCap - currentMonthTotalPoints);
-    if (finalBase > remainingMonthly) {
-      cappedMonthly = true;
-      finalBase = remainingMonthly;
-      capWarning = `Exceeds monthly ${capGroup.name} cap of ${capGroup.monthlyBonusCap.toLocaleString()} RP. Points reduced to ${finalBase.toLocaleString()} RP.`;
-    }
-  }
+  const isTotalPointsCap =
+    rule.capTarget === 'total_points' ||
+    capGroup?.capTarget === 'total_points' ||
+    capGroup?.capsTotalPoints;
 
-  // Handle bonus point caps
   const monthlyCap = rule.monthlyBonusCap ?? capGroup?.monthlyBonusCap;
   const dailyCap = rule.dailyBonusCap ?? capGroup?.dailyBonusCap;
 
-  // Check Sub-Cap / Category Cap
-  if (monthlyCap && finalBonus > 0) {
-    const remainingMonthly = Math.max(0, monthlyCap - currentMonthBonus);
-    if (finalBonus > remainingMonthly) {
+  // Handle total points capping (e.g. SBI Cashback 5% online entire cap, or Grocery/Utilities total caps)
+  if (isTotalPointsCap && monthlyCap) {
+    const rawTotal = rawBase + rawBonus;
+    const remainingMonthly = Math.max(0, monthlyCap - currentMonthTotalPoints);
+    if (rawTotal > remainingMonthly) {
       cappedMonthly = true;
-      const originalBonus = finalBonus;
-      finalBonus = remainingMonthly;
-      capWarning = `Exceeds monthly bonus limit for ${rule.name} (${monthlyCap.toLocaleString()} RP) by ${(originalBonus - remainingMonthly).toLocaleString()} RP.`;
+      const originalTotal = rawTotal;
+      if (rawBase >= remainingMonthly) {
+        finalBase = remainingMonthly;
+        finalBonus = 0;
+      } else {
+        finalBonus = Number((remainingMonthly - rawBase).toFixed(2));
+      }
+      capWarning = `Exceeds monthly cap for ${rule.name} (${monthlyCap.toLocaleString()} ${card.pointName}) by ${Number((originalTotal - remainingMonthly).toFixed(2)).toLocaleString()} ${card.pointName}. Total reward capped at ${remainingMonthly.toLocaleString()} ${card.pointName}.`;
+    }
+  } else {
+    // Handle bonus-only point caps (e.g. SmartBuy 4X bonus cap)
+    if (monthlyCap && finalBonus > 0) {
+      const remainingMonthly = Math.max(0, monthlyCap - currentMonthBonus);
+      if (finalBonus > remainingMonthly) {
+        cappedMonthly = true;
+        const originalBonus = finalBonus;
+        finalBonus = remainingMonthly;
+        capWarning = `Exceeds monthly bonus limit for ${rule.name} (${monthlyCap.toLocaleString()} ${card.pointName}) by ${Number((originalBonus - remainingMonthly).toFixed(2)).toLocaleString()} ${card.pointName}.`;
+      }
     }
   }
 
@@ -444,28 +458,79 @@ export function evaluateCardPeriodSummary(
   });
 
   // Evaluate Milestones (Amex MRCC or similar cards)
+  // Helper to determine if a transaction rule is eligible for a milestone
+  const isRuleEligibleForMilestone = (rule: RewardRule, mRule: MilestoneRule): boolean => {
+    if (mRule.eligibleRuleIds && mRule.eligibleRuleIds.length > 0) {
+      return mRule.eligibleRuleIds.includes(rule.id);
+    }
+    if (mRule.excludedRuleIds && mRule.excludedRuleIds.length > 0) {
+      return !mRule.excludedRuleIds.includes(rule.id);
+    }
+    if (rule.isExempt) {
+      return mRule.includeExemptCategories || rule.isMilestoneEligible || false;
+    }
+    return true;
+  };
+
+  const quarterNumber = Math.ceil(month / 3);
+  const quarterStartMonth = (quarterNumber - 1) * 3 + 1;
+  const quarterEndMonth = quarterNumber * 3;
+  const quarterNames = ['Jan - Mar', 'Apr - Jun', 'Jul - Sep', 'Oct - Dec'];
+  const quarterLabel = `Q${quarterNumber} ${year} (${quarterNames[quarterNumber - 1]})`;
+
+  // Evaluate Milestones (Amex MRCC, Regalia Gold quarterly/annual, lounge passes, fee waivers)
   let totalMilestonePoints = 0;
   const milestonesProgress: MilestoneProgress[] = card.milestoneRules.map((mRule) => {
+    // 1. Determine period transactions according to milestone period
+    let eligibleTransactions: Transaction[];
+    let milestonePeriodLabel = '';
+
+    if (mRule.period === 'quarterly') {
+      milestonePeriodLabel = `Q${quarterNumber} ${year}`;
+      eligibleTransactions = transactions.filter((t) => {
+        const d = getEffectiveDate(t, basis);
+        if (!d) return false;
+        const [y, m] = d.split('-').map(Number);
+        return y === year && m >= quarterStartMonth && m <= quarterEndMonth;
+      });
+    } else if (mRule.period === 'annual') {
+      milestonePeriodLabel = `Year ${year}`;
+      eligibleTransactions = transactions.filter((t) => {
+        const d = getEffectiveDate(t, basis);
+        if (!d) return false;
+        const [y] = d.split('-').map(Number);
+        return y === year;
+      });
+    } else {
+      // calendar_month or billing_cycle
+      const monthNames = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      milestonePeriodLabel = `${monthNames[month - 1]} ${year}`;
+      eligibleTransactions = periodTransactions;
+    }
+
+    const benefitType = mRule.benefitType || (mRule.rewardPoints ? 'points' : 'voucher');
+    const rewardPoints = mRule.rewardPoints || 0;
+
     if (mRule.type === 'transaction_count') {
       const targetCount = mRule.targetCount || 4;
       const minAmount = mRule.minTxnAmount || 1500;
 
       // Filter eligible transactions
-      const qualifying = periodTransactions.filter((txn) => {
+      const qualifying = eligibleTransactions.filter((txn) => {
         if (txn.isRefund) return false;
         if (txn.amount < minAmount) return false;
 
         const rule = card.rewardRules.find((r) => r.id === txn.ruleId);
         if (!rule) return false;
-        if (rule.isExempt && !mRule.includeExemptCategories && !rule.isMilestoneEligible) {
-          return false;
-        }
-        return true;
+        return isRuleEligibleForMilestone(rule, mRule);
       });
 
       const isCompleted = qualifying.length >= targetCount;
-      if (isCompleted) {
-        totalMilestonePoints += mRule.rewardPoints;
+      if (isCompleted && rewardPoints > 0) {
+        totalMilestonePoints += rewardPoints;
       }
 
       return {
@@ -473,10 +538,14 @@ export function evaluateCardPeriodSummary(
         title: mRule.title,
         description: mRule.description,
         type: mRule.type,
+        period: mRule.period,
+        periodLabel: milestonePeriodLabel,
+        benefitType,
+        benefitValue: mRule.benefitValue,
         currentCount: qualifying.length,
         targetCount,
         isCompleted,
-        rewardPoints: mRule.rewardPoints,
+        rewardPoints,
         qualifyingTransactions: qualifying.map((q) => ({
           id: q.id,
           merchant: q.merchant,
@@ -486,24 +555,32 @@ export function evaluateCardPeriodSummary(
         percentComplete: Math.min(100, Math.round((qualifying.length / targetCount) * 100)),
       };
     } else {
-      // Cumulative spend milestone (e.g. ₹20,000 monthly spend)
+      // Cumulative spend milestone (e.g. ₹20,000 monthly, ₹1.5L quarterly voucher, ₹50k lounge, ₹4L fee waiver)
       const targetSpend = mRule.targetSpend || 20000;
 
       // Sum net spends of all eligible categories
       let eligibleSpend = 0;
-      for (const txn of periodTransactions) {
+      for (const txn of eligibleTransactions) {
         const rule = card.rewardRules.find((r) => r.id === txn.ruleId);
         if (!rule) continue;
-        if (rule.isExempt && !mRule.includeExemptCategories && !rule.isMilestoneEligible) {
-          continue;
-        }
+        if (!isRuleEligibleForMilestone(rule, mRule)) continue;
+
         eligibleSpend += txn.isRefund ? -Math.abs(txn.amount) : Math.abs(txn.amount);
       }
 
       eligibleSpend = Math.max(0, eligibleSpend);
       const isCompleted = eligibleSpend >= targetSpend;
-      if (isCompleted) {
-        totalMilestonePoints += mRule.rewardPoints;
+      if (isCompleted && rewardPoints > 0) {
+        totalMilestonePoints += rewardPoints;
+      }
+
+      const remainingSpend = Math.max(0, targetSpend - eligibleSpend);
+      let loungeVisitsUnlocked: number | undefined;
+      let loungeVisitsRemainingSpend: number | undefined;
+
+      if (benefitType === 'lounge_access') {
+        loungeVisitsUnlocked = isCompleted ? (mRule.loungeVisitsCount || 2) : 0;
+        loungeVisitsRemainingSpend = remainingSpend;
       }
 
       return {
@@ -511,14 +588,38 @@ export function evaluateCardPeriodSummary(
         title: mRule.title,
         description: mRule.description,
         type: mRule.type,
+        period: mRule.period,
+        periodLabel: milestonePeriodLabel,
+        benefitType,
+        benefitValue: mRule.benefitValue,
         currentSpend: eligibleSpend,
         targetSpend,
+        remainingSpend,
         isCompleted,
-        rewardPoints: mRule.rewardPoints,
+        rewardPoints,
+        loungeVisitsUnlocked,
+        loungeVisitsRemainingSpend,
         percentComplete: Math.min(100, Math.round((eligibleSpend / targetSpend) * 100)),
       };
     }
   });
+
+  // Build Lounge Summary
+  const loungeMilestone = milestonesProgress.find((m) => m.benefitType === 'lounge_access');
+  let loungeSummary: PeriodSummary['loungeSummary'] = undefined;
+  if (loungeMilestone) {
+    const visits = loungeMilestone.loungeVisitsUnlocked || 0;
+    const target = loungeMilestone.targetSpend || 50000;
+    const current = loungeMilestone.currentSpend || 0;
+    loungeSummary = {
+      totalUnlockedVisits: visits,
+      activeVisitsAvailable: visits,
+      qualifyingSpendThisQuarter: current,
+      targetQuarterSpend: target,
+      remainingSpendToUnlock: Math.max(0, target - current),
+      status: visits > 0 ? 'unlocked' : 'in_progress',
+    };
+  }
 
   const netPoints = totalBasePoints + totalBonusPoints + totalMilestonePoints;
   const ceiling = card.statementCeilingPoints;
@@ -537,6 +638,7 @@ export function evaluateCardPeriodSummary(
     periodLabel,
     year,
     month,
+    quarterLabel,
     totalSpend,
     totalRefunds,
     netSpend,
@@ -549,6 +651,7 @@ export function evaluateCardPeriodSummary(
     statementCeilingReached,
     capsProgress,
     milestonesProgress,
+    loungeSummary,
   };
 }
 

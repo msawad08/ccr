@@ -1,7 +1,9 @@
-export type CalculationMode = 'floor' | 'proportional' | 'round';
+export type CalculationMode = 'floor' | 'direct_percentage' | 'proportional' | 'round';
 export type DateTrackingBasis = 'posting_date' | 'transaction_date';
-export type MilestonePeriod = 'calendar_month' | 'billing_cycle' | 'quarter' | 'annual';
+export type MilestonePeriod = 'calendar_month' | 'billing_cycle' | 'quarterly' | 'annual';
 export type MilestoneType = 'transaction_count' | 'cumulative_spend';
+export type MilestoneBenefitType = 'points' | 'voucher' | 'fee_waiver' | 'lounge_access';
+export type CapTarget = 'bonus_only' | 'total_points';
 
 export interface CapGroupDefinition {
   id: string;
@@ -10,20 +12,23 @@ export interface CapGroupDefinition {
   monthlyBonusCap?: number | null;
   parentGroupId?: string | null; // e.g., smartbuy_voucher has parent 'smartbuy'
   description?: string;
-  // If true, the cap applies to total points (base + bonus), otherwise bonus points only
-  capsTotalPoints?: boolean;
+  // If 'total_points', cap applies to the entire reward (e.g. SBI Cashback 5% online cap of ₹5,000)
+  capTarget?: CapTarget;
+  capsTotalPoints?: boolean; // backwards compatibility
 }
 
 export interface RewardRule {
   id: string;
   name: string;
   categoryKey: string;
-  baseRateSpend: number; // e.g. 200
-  baseRatePoints: number; // e.g. 5
-  bonusMultiplier: number; // e.g. 4 for 5X total, 9 for 10X total, 0 for 1X
+  baseRateSpend: number; // e.g. 200 (for HDFC) or 100 (for SBI Cashback)
+  baseRatePoints: number; // e.g. 5 (for HDFC) or 1 (for 1% SBI Cashback)
+  bonusMultiplier: number; // e.g. 4 for 5X/5%, 9 for 10X, 0 for 1X
   capGroupId?: string | null;
   dailyBonusCap?: number | null;
   monthlyBonusCap?: number | null;
+  // If 'total_points', capping limits entire reward (base + bonus), e.g. SBI CB 5% online
+  capTarget?: CapTarget;
   isExempt?: boolean; // Fuel, Rent, Wallet, Gov (0 RP)
   isMilestoneEligible?: boolean; // amex fuel/utilities count for milestone but 0 base points
   dateTrackingBasis?: DateTrackingBasis;
@@ -35,22 +40,30 @@ export interface MilestoneRule {
   title: string;
   description: string;
   type: MilestoneType;
-  period: MilestonePeriod;
+  period: MilestonePeriod; // 'calendar_month' | 'billing_cycle' | 'quarterly' | 'annual'
   targetCount?: number; // e.g. 4 for 4x transactions
   minTxnAmount?: number; // e.g. 1500
-  targetSpend?: number; // e.g. 20000
-  rewardPoints: number; // e.g. 1000
-  includeExemptCategories?: boolean; // true if fuel/utility spend counts towards milestone
+  targetSpend?: number; // e.g. 150000 for quarterly ₹1.5L voucher, 50000 for quarterly lounge, 400000 for fee waiver
+  rewardPoints?: number; // e.g. 1000 bonus points
+  benefitType?: MilestoneBenefitType; // 'points' | 'voucher' | 'fee_waiver' | 'lounge_access'
+  benefitValue?: string; // e.g. "₹1,500 Voucher", "Fee Waived (₹2,500)", "2 Lounge Visits"
+  voucherValue?: number; // e.g. 1500
+  voucherBrand?: string; // e.g. "Flights / Marriott / M&S"
+  loungeVisitsCount?: number; // e.g. 2 complimentary lounge visits
+  // Granular category inclusion: which specific category rules count towards this milestone
+  eligibleRuleIds?: string[];
+  excludedRuleIds?: string[];
+  includeExemptCategories?: boolean; // backwards compatibility
   badgeText?: string;
 }
 
 export interface CardTemplate {
   id: string;
   name: string;
-  issuer: string; // e.g. 'HDFC Bank', 'American Express'
+  issuer: string; // e.g. 'HDFC Bank', 'American Express', 'SBI Card'
   network: 'Visa' | 'Mastercard' | 'Amex' | 'RuPay' | 'Diners' | 'Other';
   currency: string; // e.g. 'INR'
-  pointName: string; // e.g. 'RP', 'MR Points', 'Miles', 'Cashback ₹'
+  pointName: string; // e.g. 'RP', 'MR Points', 'Cashback ₹', 'Miles'
   pointValueInInr: number; // e.g. 0.50, 0.25, 1.00
   statementCeilingPoints?: number | null; // e.g. 50000 for Regalia Gold
   theme: {
@@ -61,9 +74,9 @@ export interface CardTemplate {
     tagBg: string;
   };
   baseRule: {
-    spendStep: number; // e.g. 200 or 50
-    pointsPerStep: number; // e.g. 5 or 1
-    calculationMode: CalculationMode;
+    spendStep: number; // e.g. 200, 100, 50
+    pointsPerStep: number; // e.g. 5, 1, 5
+    calculationMode: CalculationMode; // 'floor' | 'direct_percentage' | 'proportional' | 'round'
     excludedCategoryIds?: string[];
   };
   capGroups: Record<string, CapGroupDefinition>;
@@ -135,6 +148,7 @@ export interface CapProgress {
   remainingBonusPoints?: number | null;
   percentUsed: number;
   isExceeded: boolean;
+  capTarget?: CapTarget;
 }
 
 export interface MilestoneProgress {
@@ -142,12 +156,19 @@ export interface MilestoneProgress {
   title: string;
   description: string;
   type: MilestoneType;
+  period: MilestonePeriod;
+  periodLabel?: string; // e.g. "Q4 2026 (Oct - Dec)", "Year 2026", "October 2026"
+  benefitType: MilestoneBenefitType;
+  benefitValue?: string;
+  rewardPoints: number;
   currentCount?: number;
   targetCount?: number;
   currentSpend?: number;
   targetSpend?: number;
+  remainingSpend?: number;
   isCompleted: boolean;
-  rewardPoints: number;
+  loungeVisitsUnlocked?: number;
+  loungeVisitsRemainingSpend?: number;
   qualifyingTransactions?: Array<{
     id: string;
     merchant: string;
@@ -161,6 +182,7 @@ export interface PeriodSummary {
   periodLabel: string;
   year: number;
   month: number;
+  quarterLabel: string; // e.g. "Q4 2026"
   totalSpend: number;
   totalRefunds: number;
   netSpend: number;
@@ -173,6 +195,14 @@ export interface PeriodSummary {
   statementCeilingReached: boolean;
   capsProgress: CapProgress[];
   milestonesProgress: MilestoneProgress[];
+  loungeSummary?: {
+    totalUnlockedVisits: number;
+    activeVisitsAvailable: number;
+    qualifyingSpendThisQuarter: number;
+    targetQuarterSpend: number;
+    remainingSpendToUnlock: number;
+    status: 'unlocked' | 'in_progress';
+  };
 }
 
 export interface MonthCapReportItem {
@@ -204,4 +234,3 @@ export interface MonthCapReportItem {
   hasCapBreached: boolean;
   hasNearCap: boolean;
 }
-
