@@ -86,7 +86,14 @@ export default function Home() {
 
         const unsub = onAuthStateChange((user) => {
           setCurrentUser(user);
-          if (user && getStorageMode() === 'supabase') {
+          if (user) {
+            setStorageMode('supabase');
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('ccr_storage_mode', 'supabase');
+              if (window.location.search.includes('code=') || window.location.hash.includes('access_token=')) {
+                window.history.replaceState({}, document.title, window.location.pathname);
+              }
+            }
             fetchUserDataFromSupabase(user.id).then(() => refreshData());
           }
         });

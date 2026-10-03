@@ -99,6 +99,7 @@ export function getSupabaseClient(): SupabaseClient | null {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
+        detectSessionInUrl: true,
       },
     });
     return supabaseInstance;
@@ -163,20 +164,30 @@ export async function signInWithMagicLink(email: string): Promise<{ error: Error
 }
 
 /**
- * Sign in with Google OAuth (if configured)
+ * Sign in with Google OAuth (works for both local Supabase and Supabase Cloud)
  */
-export async function signInWithGoogle() {
+export async function signInWithGoogle(): Promise<{ error: Error | null }> {
   const supabase = getSupabaseClient();
-  if (!supabase) throw new Error('Supabase is not configured in environment variables.');
+  if (!supabase) return { error: new Error('Supabase is not configured in environment variables.') };
 
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
-    },
-  });
+  try {
+    const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    });
 
-  if (error) throw error;
+    if (error) return { error: new Error(error.message) };
+    return { error: null };
+  } catch (err: any) {
+    return { error: new Error(err?.message || 'Google sign in failed.') };
+  }
 }
 
 /**

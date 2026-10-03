@@ -59,6 +59,31 @@ When you're done testing:
 npx supabase stop
 ```
 
+### 7. Google OAuth Login Setup (Optional)
+To test or use "Continue with Google":
+
+#### For Local Supabase Docker:
+1. Create an OAuth 2.0 Web Client ID in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+   - Set **Authorized JavaScript origins**: `http://localhost:3000` and `http://127.0.0.1:3000`
+   - Set **Authorized redirect URIs**: `http://127.0.0.1:54321/auth/v1/callback`
+2. In `supabase/config.toml`, enable the Google provider:
+   ```toml
+   [auth.external.google]
+   enabled = true
+   client_id = "your-google-client-id.apps.googleusercontent.com"
+   secret = "your-google-client-secret"
+   skip_nonce_check = true
+   ```
+3. Restart local Supabase: `npx supabase stop && npx supabase start`.
+
+#### For Supabase Cloud:
+1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials), set Authorized redirect URI to:
+   `https://<your-project-ref>.supabase.co/auth/v1/callback`
+2. In Supabase Dashboard -> **Authentication** -> **Providers** -> **Google**:
+   - Toggle **Enable Google provider** to ON.
+   - Enter your Client ID and Client Secret, then click **Save**.
+3. In CardCap Settings, click **Continue with Google** to sign in instantly!
+
 ---
 
 ## 🐳 Option 2: Standalone Docker Compose
