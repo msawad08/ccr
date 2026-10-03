@@ -1,16 +1,52 @@
 import { createClient, SupabaseClient, User, Session } from '@supabase/supabase-js';
 
 let supabaseInstance: SupabaseClient | null = null;
+let runtimeConfig: { url: string; anonKey: string } | null = null;
 
 const STORAGE_MODE_KEY = 'ccr_storage_mode';
 
 /**
- * Returns whether Supabase credentials exist in environment variables
+ * Manually set runtime Supabase credentials (e.g. dynamically fetched from /api/supabase-config)
+ */
+export function setRuntimeSupabaseConfig(config: { url: string; anonKey: string } | null) {
+  runtimeConfig = config;
+  supabaseInstance = null; // force re-initialization
+}
+
+/**
+ * Returns whether Supabase credentials exist in environment variables or runtime config
  */
 export function isSupabaseConfigured(): boolean {
+  if (runtimeConfig?.url && runtimeConfig?.anonKey) return true;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   return Boolean(url && anonKey && url.trim().length > 0 && anonKey.trim().length > 0);
+}
+
+/**
+ * Asynchronously checks /api/supabase-config and initializes Supabase client if server has credentials
+ */
+export async function checkAndInitSupabase(): Promise<{ configured: boolean; hasCommentedLines?: boolean }> {
+  if (isSupabaseConfigured()) {
+    return { configured: true };
+  }
+  if (typeof window === 'undefined') {
+    return { configured: false };
+  }
+  try {
+    const res = await fetch('/api/supabase-config', { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.configured && data.url && data.anonKey) {
+        setRuntimeSupabaseConfig({ url: data.url, anonKey: data.anonKey });
+        return { configured: true };
+      }
+      return { configured: false, hasCommentedLines: Boolean(data.hasCommentedLines) };
+    }
+  } catch (err) {
+    console.warn('Could not fetch Supabase runtime configuration:', err);
+  }
+  return { configured: false };
 }
 
 /**
@@ -35,9 +71,12 @@ export function setStorageMode(mode: 'local' | 'supabase'): void {
 }
 
 /**
- * Returns the Supabase configuration from environment variables
+ * Returns the Supabase configuration from runtime or environment variables
  */
 export function getSupabaseConfig(): { url: string; anonKey: string } | null {
+  if (runtimeConfig?.url && runtimeConfig?.anonKey) {
+    return runtimeConfig;
+  }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (url && anonKey && url.trim().length > 0 && anonKey.trim().length > 0) {

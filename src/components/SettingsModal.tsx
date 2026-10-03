@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import {
   isSupabaseConfigured,
+  checkAndInitSupabase,
   getStorageMode,
   setStorageMode as saveStorageModePref,
   signUpWithEmail,
@@ -58,6 +59,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const [storageMode, setStorageMode] = useState<'local' | 'supabase'>('local');
   const [supabaseReady, setSupabaseReady] = useState(false);
+  const [commentedWarning, setCommentedWarning] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   // Auth Form State
@@ -80,14 +82,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     if (isOpen) {
       const mode = getStorageMode();
       setStorageMode(mode);
-      const configured = isSupabaseConfigured();
-      setSupabaseReady(configured);
 
-      if (configured) {
-        getCurrentUser().then((user) => {
-          setCurrentUser(user);
-        });
-      }
+      // Verify Supabase configuration (checks inlined env vars and /api/supabase-config)
+      checkAndInitSupabase().then((res) => {
+        setSupabaseReady(res.configured);
+        setCommentedWarning(Boolean(res.hasCommentedLines));
+
+        if (res.configured) {
+          getCurrentUser().then((user) => {
+            setCurrentUser(user);
+          });
+        }
+      });
     }
   }, [isOpen]);
 
@@ -376,6 +382,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <AlertCircle className="w-3.5 h-3.5" />
                   <span>Environment variables required</span>
                 </p>
+
+                {commentedWarning && (
+                  <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] space-y-1">
+                    <p className="font-semibold text-amber-200">Commented lines detected in .env.local</p>
+                    <p className="text-zinc-300">
+                      Your <code className="text-amber-300 font-mono">.env.local</code> has lines prefixed with <code className="text-amber-300 font-mono">#</code>. Please remove the <code className="text-amber-300 font-mono">#</code> prefix so Next.js can load them.
+                    </p>
+                  </div>
+                )}
+
                 <p className="text-[11px]">
                   To use Supabase Cloud or Local Docker, add the following to your <code className="text-white">.env.local</code> file:
                 </p>

@@ -38,6 +38,7 @@ import {
 import { evaluateCardPeriodSummary } from '../lib/rewardsEngine';
 import {
   isSupabaseConfigured as checkSupabaseConfigured,
+  checkAndInitSupabase,
   getStorageMode,
   getCurrentUser,
   onAuthStateChange,
@@ -74,23 +75,25 @@ export default function Home() {
     setStorageMode(mode);
     refreshData();
 
-    if (checkSupabaseConfigured()) {
-      getCurrentUser().then((user) => {
-        setCurrentUser(user);
-        if (user && mode === 'supabase') {
-          fetchUserDataFromSupabase(user.id).then(() => refreshData());
-        }
-      });
+    checkAndInitSupabase().then((res) => {
+      if (res.configured) {
+        getCurrentUser().then((user) => {
+          setCurrentUser(user);
+          if (user && getStorageMode() === 'supabase') {
+            fetchUserDataFromSupabase(user.id).then(() => refreshData());
+          }
+        });
 
-      const unsub = onAuthStateChange((user) => {
-        setCurrentUser(user);
-        if (user && getStorageMode() === 'supabase') {
-          fetchUserDataFromSupabase(user.id).then(() => refreshData());
-        }
-      });
+        const unsub = onAuthStateChange((user) => {
+          setCurrentUser(user);
+          if (user && getStorageMode() === 'supabase') {
+            fetchUserDataFromSupabase(user.id).then(() => refreshData());
+          }
+        });
 
-      return () => unsub();
-    }
+        return () => unsub();
+      }
+    });
   }, []);
 
   const refreshData = () => {
