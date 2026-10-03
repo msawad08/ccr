@@ -5,6 +5,7 @@ import { CardTemplate, PeriodSummary } from '../types/card';
 import { formatCurrency, formatPoints } from '../lib/utils';
 import { Sparkles, TrendingUp, AlertTriangle, ShieldCheck, ShoppingBag, Plane, Tag, BarChart3 } from 'lucide-react';
 import { DailyCapInspector } from './DailyCapInspector';
+import { MilestoneCardSection } from './MilestoneCardSection';
 
 interface RegaliaGoldDashboardProps {
   card: CardTemplate;
@@ -338,6 +339,14 @@ export const RegaliaGoldDashboard: React.FC<RegaliaGoldDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Quarterly, Annual & Loyalty Milestones (Vouchers, Lounge Access, Fee Waivers) */}
+      <MilestoneCardSection
+        milestones={summary.milestonesProgress}
+        loungeSummary={summary.loungeSummary}
+        pointName={card.pointName}
+        onOpenMonthlyReport={onOpenMonthlyReport}
+      />
     </div>
   );
 };

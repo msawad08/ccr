@@ -5,6 +5,7 @@ import { CardTemplate, PeriodSummary } from '../types/card';
 import { formatCurrency, formatPoints } from '../lib/utils';
 import { Sparkles, TrendingUp, ShieldCheck, CheckCircle2, BarChart3 } from 'lucide-react';
 import { DailyCapInspector } from './DailyCapInspector';
+import { MilestoneCardSection } from './MilestoneCardSection';
 
 interface GenericCardDashboardProps {
   card: CardTemplate;
@@ -181,53 +182,13 @@ export const GenericCardDashboard: React.FC<GenericCardDashboardProps> = ({
         </div>
       )}
 
-      {/* Dynamic Milestones */}
-      {summary.milestonesProgress.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>Card Milestones Progress</span>
-          </h3>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {summary.milestonesProgress.map((m) => (
-              <div
-                key={m.ruleId}
-                className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-semibold text-white text-base">{m.title}</h4>
-                    <p className="text-xs text-zinc-400">{m.description}</p>
-                  </div>
-                  <span className="text-xs font-mono font-semibold text-emerald-400 bg-emerald-400/10 px-2.5 py-1 rounded-lg border border-emerald-400/20">
-                    +{formatPoints(m.rewardPoints)} {card.pointName}
-                  </span>
-                </div>
-
-                <div>
-                  <div className="flex justify-between text-xs mb-1.5">
-                    <span className="text-zinc-400">
-                      Progress: <strong className="text-white">{m.percentComplete}%</strong>
-                    </span>
-                    <span className={m.isCompleted ? 'text-emerald-400' : 'text-amber-400'}>
-                      {m.isCompleted ? 'Achieved!' : 'In Progress'}
-                    </span>
-                  </div>
-                  <div className="w-full bg-zinc-800 rounded-full h-3 overflow-hidden p-0.5 border border-zinc-700/50">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        m.isCompleted ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-500 to-yellow-400'
-                      }`}
-                      style={{ width: `${m.percentComplete}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Milestones & Loyalty Benefits (Monthly, Quarterly, Annual) */}
+      <MilestoneCardSection
+        milestones={summary.milestonesProgress}
+        loungeSummary={summary.loungeSummary}
+        pointName={card.pointName}
+        onOpenMonthlyReport={onOpenMonthlyReport}
+      />
     </div>
   );
 };
