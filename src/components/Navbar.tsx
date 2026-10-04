@@ -3,7 +3,6 @@
 import React from 'react';
 import {
   Plus,
-  Sliders,
   CreditCard,
   Settings,
   Shield,
@@ -16,7 +15,7 @@ import { canManageCards, getUserRole } from '../lib/adminAuth';
 
 interface NavbarProps {
   onOpenAddTransaction: () => void;
-  onOpenCardRules: () => void;
+  onOpenCardRules?: () => void;
   onOpenWallet: () => void;
   onOpenSettings: () => void;
   onOpenMonthlyReport?: () => void;
@@ -109,15 +108,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Card Rules & Devaluation Editor button */}
-          <button
-            onClick={onOpenCardRules}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-stone-300 bg-stone-900/60 hover:bg-stone-800 border border-stone-800 hover:border-stone-700 transition-all hover:text-stone-100 active:scale-[0.98]"
-            title="Edit Caps, Multipliers & Rules"
-          >
-            <Sliders className="w-3.5 h-3.5 text-stone-400" />
-            <span className="hidden sm:inline">Rules</span>
-          </button>
 
           {/* My Cards / Wallet button */}
           <button

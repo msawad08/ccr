@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CardTemplate, RewardRule, MilestoneRule, CapGroupDefinition } from '../types/card';
 import {
   X,
@@ -235,6 +235,20 @@ export const CardTemplateEditorModal: React.FC<CardTemplateEditorModalProps> = (
     setActiveTemplateId(newId);
     setTemplate(newTemplate);
   };
+
+  useEffect(() => {
+    if (isOpen) {
+      if (selectedTemplateId === 'new') {
+        handleCreateNewTemplate();
+      } else if (selectedTemplateId) {
+        const found = cardTemplates.find((t) => t.id === selectedTemplateId);
+        if (found) {
+          setActiveTemplateId(found.id);
+          setTemplate(JSON.parse(JSON.stringify(found)));
+        }
+      }
+    }
+  }, [isOpen, selectedTemplateId, cardTemplates]);
 
   if (!isOpen) return null;
 

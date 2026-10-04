@@ -12,16 +12,24 @@ import {
   MessageSquare,
   ShieldCheck,
   Award,
+  Edit3,
+  Trash2,
 } from 'lucide-react';
 import { CardTemplate } from '../types/card';
+import { canManageCards } from '../lib/adminAuth';
 
 interface CommunityCatalogModalProps {
   isOpen: boolean;
   onClose: () => void;
   catalogTemplates: CardTemplate[];
   userCardTemplateIds: string[];
+  currentUserEmail?: string | null;
+  isAdmin?: boolean;
   onAddCardToWallet: (templateId: string) => void;
-  onRequestCardUpdate: (template: CardTemplate) => void;
+  onEditCard: (template: CardTemplate) => void;
+  onDeleteCard?: (templateId: string) => void;
+  onCreateNewCard?: () => void;
+  onRequestCardUpdate?: (template: CardTemplate) => void;
 }
 
 export const CommunityCatalogModal: React.FC<CommunityCatalogModalProps> = ({
@@ -29,7 +37,12 @@ export const CommunityCatalogModal: React.FC<CommunityCatalogModalProps> = ({
   onClose,
   catalogTemplates,
   userCardTemplateIds,
+  currentUserEmail,
+  isAdmin,
   onAddCardToWallet,
+  onEditCard,
+  onDeleteCard,
+  onCreateNewCard,
   onRequestCardUpdate,
 }) => {
   const [search, setSearch] = useState('');
@@ -37,6 +50,8 @@ export const CommunityCatalogModal: React.FC<CommunityCatalogModalProps> = ({
   const [addedIds, setAddedIds] = useState<string[]>([]);
 
   if (!isOpen) return null;
+
+  const effectiveIsAdmin = isAdmin !== undefined ? isAdmin : canManageCards(currentUserEmail);
 
   const issuers = Array.from(new Set(catalogTemplates.map((c) => c.issuer)));
 
@@ -70,7 +85,7 @@ export const CommunityCatalogModal: React.FC<CommunityCatalogModalProps> = ({
             </div>
             <div>
               <span className="text-[10px] font-mono tracking-widest text-[#C5A880] uppercase">
-                Curated Registry
+                Curated Registry & Rules
               </span>
               <h2 className="text-xl font-serif tracking-tight text-stone-100">
                 CardCap Community Catalog
@@ -78,12 +93,26 @@ export const CommunityCatalogModal: React.FC<CommunityCatalogModalProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full text-stone-400 hover:text-stone-100 hover:bg-stone-900 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {onCreateNewCard && (
+              <button
+                type="button"
+                onClick={onCreateNewCard}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-medium text-stone-950 bg-[#C5A880] hover:bg-[#d4b993] transition-all active:scale-[0.98] shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Create Card / AI Studio</span>
+                <span className="sm:hidden">New Card</span>
+              </button>
+            )}
+
+            <button
+              onClick={onClose}
+              className="p-2 rounded-full text-stone-400 hover:text-stone-100 hover:bg-stone-900 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Search & Filters */}
@@ -208,15 +237,38 @@ export const CommunityCatalogModal: React.FC<CommunityCatalogModalProps> = ({
                   </div>
 
                   {/* Actions */}
-                  <div className="pt-3 border-t border-stone-800/60 flex items-center justify-between text-xs">
-                    <button
-                      type="button"
-                      onClick={() => onRequestCardUpdate(card)}
-                      className="text-stone-400 hover:text-[#C5A880] transition-colors flex items-center gap-1 text-[11px]"
-                    >
-                      <MessageSquare className="w-3 h-3" />
-                      <span>Suggest Rule Update</span>
-                    </button>
+                  <div className="pt-3 border-t border-stone-800/60 flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => onEditCard(card)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-stone-300 hover:text-stone-100 bg-stone-900 hover:bg-stone-800 border border-stone-800 hover:border-stone-700 transition-all text-xs font-medium active:scale-[0.98]"
+                        title="Edit rules for your wallet, or propose updates for everyone"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-[#C5A880]" />
+                        <span>Edit</span>
+                      </button>
+
+                      {effectiveIsAdmin && onDeleteCard && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (
+                              confirm(
+                                `Are you sure you want to delete "${card.name}" from the Community Catalog? This action cannot be undone.`
+                              )
+                            ) {
+                              onDeleteCard(card.id);
+                            }
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-red-400/80 hover:text-red-300 bg-red-950/20 hover:bg-red-950/40 border border-red-900/30 hover:border-red-800/50 transition-all text-xs font-medium active:scale-[0.98]"
+                          title="Admin Only: Delete card from catalog"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Delete</span>
+                        </button>
+                      )}
+                    </div>
 
                     <button
                       type="button"

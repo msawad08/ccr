@@ -180,7 +180,7 @@ For detailed information, check the [Local Supabase Docker Guide](supabase/LOCAL
 
 Adding a new card or updating an existing one takes under 60 seconds:
 
-1. Open CardCap in your browser and click **Rules & Templates** in the top navigation bar.
+1. Open CardCap in your browser and click **Catalog** in the top navigation bar, then click **Create Card / AI Studio** (or click **Edit** on any existing catalog card).
 2. Navigate to the **AI Studio (JSON5)** tab.
 3. Type the card name (e.g. `Axis Atlas`, `Tata Neu Infinity`, or `Infinia Metal`) and click **Copy AI Prompt**.
 4. Paste the prompt into [Google Gemini](https://gemini.google.com) or [ChatGPT](https://chatgpt.com).

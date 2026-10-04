@@ -261,23 +261,45 @@ export function getInitialSampleData(): {
   };
 }
 
+const DELETED_TEMPLATES_KEY = 'ccr_deleted_templates_v1';
+
+export function loadDeletedTemplateIds(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(DELETED_TEMPLATES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveDeletedTemplateIds(ids: string[]): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(DELETED_TEMPLATES_KEY, JSON.stringify(ids));
+  }
+}
+
 export function loadCardTemplates(): CardTemplate[] {
   if (typeof window === 'undefined') return DEFAULT_CARD_TEMPLATES;
   try {
+    const deletedIds = new Set(loadDeletedTemplateIds());
     const raw = localStorage.getItem(STORAGE_KEYS.CARD_TEMPLATES);
     if (!raw) {
-      saveCardTemplates(DEFAULT_CARD_TEMPLATES);
-      return DEFAULT_CARD_TEMPLATES;
+      const filteredDefaults = DEFAULT_CARD_TEMPLATES.filter((d) => !deletedIds.has(d.id));
+      saveCardTemplates(filteredDefaults);
+      return filteredDefaults;
     }
-    const parsed = JSON.parse(raw);
-    // Ensure all default templates are present in case new defaults were added
-    const ids = new Set(parsed.map((c: CardTemplate) => c.id));
+    const parsed: CardTemplate[] = JSON.parse(raw);
+    const validParsed = parsed.filter((c: CardTemplate) => !deletedIds.has(c.id));
+    
+    // Ensure all default templates are present in case new defaults were added, unless deleted
+    const ids = new Set(validParsed.map((c: CardTemplate) => c.id));
     for (const d of DEFAULT_CARD_TEMPLATES) {
-      if (!ids.has(d.id)) {
-        parsed.push(d);
+      if (!ids.has(d.id) && !deletedIds.has(d.id)) {
+        validParsed.push(d);
       }
     }
-    return parsed;
+    return validParsed;
   } catch (e) {
     console.error('Error loading card templates:', e);
     return DEFAULT_CARD_TEMPLATES;
@@ -291,6 +313,12 @@ export function saveCardTemplates(templates: CardTemplate[]): void {
 }
 
 export function saveCardTemplate(template: CardTemplate): void {
+  // If template was previously deleted, un-delete it
+  const deleted = loadDeletedTemplateIds();
+  if (deleted.includes(template.id)) {
+    saveDeletedTemplateIds(deleted.filter((id) => id !== template.id));
+  }
+
   const current = loadCardTemplates();
   const idx = current.findIndex((t) => t.id === template.id);
   if (idx >= 0) {
@@ -301,7 +329,18 @@ export function saveCardTemplate(template: CardTemplate): void {
   saveCardTemplates(current);
 }
 
+export function deleteCardTemplate(templateId: string): void {
+  const deleted = loadDeletedTemplateIds();
+  if (!deleted.includes(templateId)) {
+    deleted.push(templateId);
+    saveDeletedTemplateIds(deleted);
+  }
+  const current = loadCardTemplates().filter((t) => t.id !== templateId);
+  saveCardTemplates(current);
+}
+
 export function resetCardTemplates(): CardTemplate[] {
+  saveDeletedTemplateIds([]);
   saveCardTemplates(DEFAULT_CARD_TEMPLATES);
   return DEFAULT_CARD_TEMPLATES;
 }

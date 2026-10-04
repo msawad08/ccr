@@ -1,7 +1,8 @@
 import { CardTemplate } from '../types/card';
 import { CardSubmission, FeedbackItem, SubmissionType, FeedbackType, FeedbackCategory } from '../types/admin';
 import { getSupabaseClient } from './supabaseClient';
-import { loadCardTemplates, saveCardTemplates } from './storage';
+import { loadCardTemplates, saveCardTemplates, deleteCardTemplate } from './storage';
+import { canManageCards } from './adminAuth';
 
 const SUBMISSIONS_STORAGE_KEY = 'ccr_card_submissions_v1';
 const FEEDBACKS_STORAGE_KEY = 'ccr_feedbacks_v1';
@@ -246,6 +247,34 @@ export async function fetchAllSubmissions(): Promise<CardSubmission[]> {
   }
 
   return localList;
+}
+
+/**
+ * Admin deletes a card template from the catalog and local storage
+ */
+export async function deleteCardFromCatalog(
+  templateId: string,
+  adminEmail: string
+): Promise<boolean> {
+  if (!canManageCards(adminEmail)) {
+    throw new Error('Only administrators can remove cards from the Community Catalog.');
+  }
+
+  // 1. Delete locally (and track in deleted templates)
+  deleteCardTemplate(templateId);
+
+  // 2. Sync deletion to Supabase
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from('card_templates').delete().eq('id', templateId);
+      await supabase.from('card_submissions').delete().eq('template_id', templateId);
+    } catch (err) {
+      console.warn('Could not sync card template deletion to Supabase:', err);
+    }
+  }
+
+  return true;
 }
 
 // ---------------------------------------------------------------------------

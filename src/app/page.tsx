@@ -23,6 +23,8 @@ import {
   Transaction,
   DateTrackingBasis,
 } from '../types/card';
+import { canManageCards } from '../lib/adminAuth';
+import { deleteCardFromCatalog } from '../lib/communityCatalog';
 import {
   loadUserCards,
   saveUserCard,
@@ -205,6 +207,19 @@ export default function Home() {
     }
   };
 
+  const handleDeleteTemplate = async (templateId: string) => {
+    try {
+      await deleteCardFromCatalog(templateId, currentUser?.email || '');
+      refreshData();
+      const remaining = cardTemplates.filter((t) => t.id !== templateId);
+      if (activeCardTemplate?.id === templateId && remaining.length > 0) {
+        setEditingTemplateId(remaining[0].id);
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Failed to delete card.');
+    }
+  };
+
   // Handlers for user cards
   const handleSaveUserCard = (card: UserCard) => {
     saveUserCard(card);
@@ -248,10 +263,6 @@ export default function Home() {
         onOpenAddTransaction={() => {
           setEditingTxn(null);
           setIsAddTxnOpen(true);
-        }}
-        onOpenCardRules={() => {
-          setEditingTemplateId(activeCardTemplate?.id || 'regalia_gold');
-          setIsCardRulesOpen(true);
         }}
         onOpenWallet={() => setIsWalletOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
@@ -400,6 +411,8 @@ export default function Home() {
         onClose={() => setIsCatalogOpen(false)}
         catalogTemplates={cardTemplates}
         userCardTemplateIds={userCards.map((c) => c.cardTemplateId)}
+        currentUserEmail={currentUser?.email}
+        isAdmin={canManageCards(currentUser?.email)}
         onAddCardToWallet={(templateId) => {
           const t = cardTemplates.find((x) => x.id === templateId);
           const newCard: UserCard = {
@@ -412,8 +425,14 @@ export default function Home() {
           handleSaveUserCard(newCard);
           setIsCatalogOpen(false);
         }}
-        onRequestCardUpdate={(template) => {
+        onEditCard={(template) => {
           setEditingTemplateId(template.id);
+          setIsCatalogOpen(false);
+          setIsCardRulesOpen(true);
+        }}
+        onDeleteCard={handleDeleteTemplate}
+        onCreateNewCard={() => {
+          setEditingTemplateId('new');
           setIsCatalogOpen(false);
           setIsCardRulesOpen(true);
         }}
