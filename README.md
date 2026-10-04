@@ -60,7 +60,34 @@ No reward rules or bank terms are hardcoded — every card, category multiplier,
 * **Cap Status Highlights:** Identifies which months reached cap (`Cap Reached`), came close (`Near Cap`), or remained underutilized.
 * **One-Click Jump:** Direct navigation to inspect historical months in detail.
 
-### 7. AI Template Studio (JSON5) & Prompt Generator
+### 7. Community Card Catalog & Publishing Workflow
+* **Community-Powered Card Catalog:** Browse and discover credit cards crafted and maintained by the community.
+* **1-Click "Add to Wallet":** Instantly clone any published card into your personal wallet with complete reward rules, daily/monthly caps, and loyalty milestones intact.
+* **Creator Credits & Authorship:** Published cards prominently display author credits (`Created by ...`), card version, and approval timestamps.
+* **Submit for Admin Review:** Standard users can create private cards, test them in their wallet, and submit them for publication.
+* **Propose Updates & Bank Devaluations:** When banks devalue a card or alter capping terms, any user can propose updated configurations for administrative verification.
+
+### 8. Admin Panel & Role-Based Governance
+* **Default Super Admin:** `msawad08@gmail.com` is configured as the default Super Admin (customizable via `NEXT_PUBLIC_SUPER_ADMIN_EMAILS` in `.env.local`).
+* **Role Hierarchy:**
+  * **Super Admin:** Appoint or demote administrators, block abusive accounts, and oversee submissions and private feedbacks.
+  * **Admin:** Review, approve, or reject card submissions/updates, and directly publish official card templates.
+  * **User:** Create custom cards for personal wallet tracking, request catalog publishing, and submit feedbacks.
+* **Admin-Exclusive Inbox:** Private portal for inspecting community submissions, viewing feedback reports, and managing team access.
+
+### 9. Dual Feedback System (General App & Card-Specific)
+* **General App Feedback:** Report bugs, request UI enhancements, and suggest new functional capabilities.
+* **Card-Specific Devaluation Reporting:** Dedicated reporting channel linked directly to specific cards (e.g. reporting revised SmartBuy caps or lounge eligibility rule changes).
+* **Strict Admin Confidentiality:** User feedback is stored securely and accessible exclusively to administrators through the Admin Panel.
+
+### 10. Warm Editorial Minimalism & Quiet Luxury UI/UX
+* **Aesthetic Philosophy:** Inspired by Japandi functionalism and high-contrast editorial typography, replacing generic multicolored gradients with refined digital craftsmanship.
+* **Palette:** Warm obsidian and espresso backdrops (`#0C0A09`, `#141210`) with hairline stone dividers (`border-stone-800/80`).
+* **Accents:** Champagne gold (`#C5A880`), alabaster typography (`#EAE4DC`), and muted earth-tone status badges (sage green, warm ochre, and terracotta).
+* **Tactile Micro-interactions:** Physics-based active touch responses (`active:scale-[0.98]`) on buttons and wallet cards.
+* **Zero Production Debug Clutter:** Suppressed technical logs, credentials, and debug badges in production builds.
+
+### 11. AI Template Studio (JSON5) & Prompt Generator
 * **One-Click Gemini / ChatGPT Prompt:** Generates a complete prompt tailored to any credit card name with the exact CardCap schema specification.
 * **JSON5 Specification:** Supports comments (`//`), unquoted keys, and trailing commas from LLM outputs without syntax errors.
 * **Download Schema (.json5):** Export the schema specification file to reference offline or upload to LLMs.
@@ -208,18 +235,27 @@ ccr/
 ├── src/
 │   ├── app/                    # Next.js App Router (page.tsx, layout.tsx, globals.css)
 │   ├── components/             # Reusable UI Components
-│   │   ├── CardTemplateEditorModal.tsx  # Full rule editor + AI Studio tab
+│   │   ├── AdminPanelModal.tsx          # Super admin user management, card approvals & feedback
+│   │   ├── CardSelector.tsx             # Card carousel and wallet selector
+│   │   ├── CardTemplateEditorModal.tsx  # Full rule editor + AI Studio tab + publish workflow
+│   │   ├── CommunityCatalogModal.tsx    # Browse community cards, 1-click install & update requests
 │   │   ├── DailyCapInspector.tsx        # Daily limit inspector & bar chart
+│   │   ├── FeedbackModal.tsx            # App feedback & card-specific devaluation reporting
 │   │   ├── GenericCardDashboard.tsx     # Dynamic dashboard for any card
 │   │   ├── MilestoneCardSection.tsx     # Quarterly/annual loyalty & lounge tracker
 │   │   ├── MonthlyReportModal.tsx       # Multi-month comparative cap utilization
-│   │   ├── Navbar.tsx                   # Top navigation with storage & sync indicators
-│   │   ├── SettingsModal.tsx            # Storage mode switcher, Auth & Excel/JSON5 export
+│   │   ├── Navbar.tsx                   # Top navigation with quiet luxury theme & admin badges
+│   │   ├── PeriodSelector.tsx           # Billing cycle & calendar month picker
+│   │   ├── RegaliaGoldDashboard.tsx     # Specialized Regalia Gold dashboard
+│   │   ├── SettingsModal.tsx            # Storage switcher, Auth & Excel/JSON5 export
 │   │   ├── TransactionEntryModal.tsx    # Transaction entry with live calculation
-│   │   └── TransactionLedger.tsx        # Transaction history & refund manager
+│   │   ├── TransactionLedger.tsx        # Transaction history & refund manager
+│   │   └── UserCardSettingsModal.tsx    # Card nickname & billing cycle configuration
 │   ├── data/
 │   │   └── defaultTemplates.ts # Default bank card templates (HDFC, Amex, SBI)
 │   ├── lib/
+│   │   ├── adminAuth.ts        # Super admin verification, roles & user blocking
+│   │   ├── communityCatalog.ts # Catalog submissions, approval workflows & feedback store
 │   │   ├── exportImportHelper.ts # Excel (.xlsx), CSV, and JSON5 export/import
 │   │   ├── json5CardHelper.ts  # JSON5 schema spec, Gemini prompt generator, parser
 │   │   ├── rewardsEngine.ts    # Core reward calculation, capping & milestone engine
@@ -227,11 +263,12 @@ ccr/
 │   │   ├── supabaseClient.ts   # Supabase client, auth methods, and mode management
 │   │   └── utils.ts            # Formatting helpers (INR currency, points)
 │   └── types/
+│       ├── admin.ts            # AppUser, CardSubmission, and FeedbackItem types
 │       └── card.ts             # TypeScript interfaces for rules, caps, milestones
 ├── supabase/
 │   ├── LOCAL_DOCKER_GUIDE.md   # Step-by-step local Supabase Docker testing guide
 │   ├── config.toml             # Supabase CLI local configuration
-│   ├── migrations/             # Database migrations
+│   ├── migrations/             # Database migrations (RLS, roles, catalog, feedback)
 │   └── schema.sql              # Supabase PostgreSQL schema with RLS policies
 ├── LICENSE                     # MIT License
 ├── package.json
