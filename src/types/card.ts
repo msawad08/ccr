@@ -83,6 +83,14 @@ export interface CardTemplate {
   rewardRules: RewardRule[];
   milestoneRules: MilestoneRule[];
   isCustom?: boolean;
+  // Publishing & Creator Credits
+  isOfficial?: boolean;
+  status?: 'draft' | 'pending' | 'published' | 'rejected';
+  creatorName?: string; // e.g. "CardCap Team" or "@msawad"
+  creatorEmail?: string;
+  version?: number;
+  publishedAt?: string;
+  originalTemplateId?: string; // If this was cloned or submitted as an update
 }
 
 export interface UserCard {

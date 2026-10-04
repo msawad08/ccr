@@ -18,7 +18,9 @@ import {
   FileCode,
   AlertCircle,
   ExternalLink,
-  Bot
+  Bot,
+  Globe,
+  Award,
 } from 'lucide-react';
 import {
   CARD_TEMPLATE_JSON5_SCHEMA_DOC,
@@ -26,6 +28,8 @@ import {
   parseAndValidateJSON5Card,
   exportCardAsJSON5,
 } from '../lib/json5CardHelper';
+import { canManageCards } from '../lib/adminAuth';
+import { submitCardForPublishing, approveCardSubmission } from '../lib/communityCatalog';
 
 interface CardTemplateEditorModalProps {
   isOpen: boolean;
@@ -34,6 +38,8 @@ interface CardTemplateEditorModalProps {
   selectedTemplateId: string;
   onSaveTemplate: (template: CardTemplate) => void;
   onResetTemplates: () => void;
+  userEmail?: string | null;
+  onCardPublished?: (card: CardTemplate) => void;
 }
 
 export const CardTemplateEditorModal: React.FC<CardTemplateEditorModalProps> = ({
@@ -43,6 +49,8 @@ export const CardTemplateEditorModal: React.FC<CardTemplateEditorModalProps> = (
   selectedTemplateId,
   onSaveTemplate,
   onResetTemplates,
+  userEmail,
+  onCardPublished,
 }) => {
   const [activeTemplateId, setActiveTemplateId] = useState(selectedTemplateId || cardTemplates[0]?.id || 'regalia_gold');
   const [template, setTemplate] = useState<CardTemplate>(() => {
@@ -59,6 +67,72 @@ export const CardTemplateEditorModal: React.FC<CardTemplateEditorModalProps> = (
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copiedExport, setCopiedExport] = useState(false);
   const [aiCardName, setAiCardName] = useState('');
+
+  // Publishing States
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [creatorCreditName, setCreatorCreditName] = useState(
+    template.creatorName || (userEmail ? `@${userEmail.split('@')[0]}` : '')
+  );
+  const [changeNotes, setChangeNotes] = useState('');
+  const [publishLoading, setPublishLoading] = useState(false);
+  const [publishMessage, setPublishMessage] = useState<string | null>(null);
+
+  const isAdmin = canManageCards(userEmail);
+
+  const handlePublishOrSubmit = async () => {
+    setPublishLoading(true);
+    try {
+      const credit = creatorCreditName.trim() || userEmail || 'Community Member';
+      const templateToPublish: CardTemplate = {
+        ...template,
+        creatorName: credit,
+        creatorEmail: userEmail || undefined,
+        status: isAdmin ? 'published' : 'pending',
+        publishedAt: isAdmin ? new Date().toISOString() : undefined,
+      };
+
+      if (isAdmin) {
+        // Direct Publish for Admins
+        const sub = await submitCardForPublishing({
+          template: templateToPublish,
+          submittedByEmail: userEmail || 'admin',
+          creatorName: credit,
+          type: template.isOfficial ? 'card_update' : 'new_card',
+          originalCardId: template.id,
+          changeSummary: changeNotes || 'Admin direct publish',
+        });
+        const approved = await approveCardSubmission(sub.id, userEmail || 'admin', templateToPublish);
+        if (onCardPublished) {
+          onCardPublished(approved);
+        }
+        setTemplate(approved);
+        onSaveTemplate(approved);
+        setPublishMessage(`"${approved.name}" has been published to the Community Catalog!`);
+      } else {
+        // Submit for Review by standard user
+        await submitCardForPublishing({
+          template: templateToPublish,
+          submittedByEmail: userEmail || 'anonymous@user',
+          creatorName: credit,
+          type: template.isOfficial ? 'card_update' : 'new_card',
+          originalCardId: template.id,
+          changeSummary: changeNotes || undefined,
+        });
+        setPublishMessage(
+          'Card submitted for Admin Review! Once approved, it will be published to the Community Catalog with your creator credits.'
+        );
+      }
+
+      setTimeout(() => {
+        setIsPublishModalOpen(false);
+        setPublishMessage(null);
+      }, 2500);
+    } catch (err: any) {
+      setPublishMessage(`Error: ${err?.message || err}`);
+    } finally {
+      setPublishLoading(false);
+    }
+  };
 
   const handleCopyPrompt = async () => {
     const prompt = generateGeminiPrompt(aiCardName.trim() || template.name);
@@ -1275,6 +1349,17 @@ export const CardTemplateEditorModal: React.FC<CardTemplateEditorModalProps> = (
 
           <div className="flex items-center space-x-2">
             <button
+              type="button"
+              onClick={() => {
+                setCreatorCreditName(template.creatorName || (userEmail ? `@${userEmail.split('@')[0]}` : ''));
+                setIsPublishModalOpen(true);
+              }}
+              className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-medium text-stone-200 bg-stone-900 hover:bg-stone-800 border border-stone-700 transition-all active:scale-[0.98]"
+            >
+              <Globe className="w-3.5 h-3.5 text-[#C5A880]" />
+              <span>{isAdmin ? 'Publish to Catalog' : 'Request to Publish'}</span>
+            </button>
+            <button
               onClick={onClose}
               className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white transition-colors"
             >
@@ -1289,6 +1374,88 @@ export const CardTemplateEditorModal: React.FC<CardTemplateEditorModalProps> = (
             </button>
           </div>
         </div>
+
+        {/* Publish / Submission Modal Dialog */}
+        {isPublishModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
+            <div className="w-full max-w-md bg-[#141210] border border-stone-800 rounded-3xl p-6 space-y-4 text-stone-100 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-stone-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-[#C5A880]" />
+                  <h4 className="text-base font-serif text-stone-100">
+                    {isAdmin ? 'Publish to Community Catalog' : 'Submit for Admin Approval'}
+                  </h4>
+                </div>
+                <button
+                  onClick={() => setIsPublishModalOpen(false)}
+                  className="p-1 rounded-full text-stone-400 hover:text-stone-100 hover:bg-stone-900"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <p className="text-xs text-stone-400 leading-relaxed">
+                {isAdmin
+                  ? 'As an Administrator, publishing this card will make it available to all CardCap community users immediately in the public catalog.'
+                  : 'Submit this card to the curation queue. Once approved by an administrator, it will be published to the Community Catalog with your creator credit.'}
+              </p>
+
+              {publishMessage && (
+                <div className="p-3 rounded-xl bg-stone-900 border border-[#C5A880]/40 text-xs text-[#EAE4DC] flex items-center gap-2">
+                  <Check className="w-4 h-4 text-[#C5A880] shrink-0" />
+                  <span>{publishMessage}</span>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[11px] font-mono tracking-wider uppercase text-stone-400 mb-1">
+                    Creator Credit Name
+                  </label>
+                  <input
+                    type="text"
+                    value={creatorCreditName}
+                    onChange={(e) => setCreatorCreditName(e.target.value)}
+                    placeholder="e.g. @username or Full Name"
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200 focus:outline-none focus:border-[#C5A880]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-mono tracking-wider uppercase text-stone-400 mb-1">
+                    Release Notes / Changes
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={changeNotes}
+                    onChange={(e) => setChangeNotes(e.target.value)}
+                    placeholder="Summary of multipliers, caps, or rules..."
+                    className="w-full bg-stone-950 border border-stone-800 rounded-xl p-3 text-xs text-stone-200 focus:outline-none focus:border-[#C5A880] resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-800">
+                <button
+                  type="button"
+                  onClick={() => setIsPublishModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs text-stone-400 hover:text-stone-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={publishLoading}
+                  onClick={handlePublishOrSubmit}
+                  className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-medium text-stone-950 bg-stone-100 hover:bg-stone-200 transition-all active:scale-[0.98] shadow-sm disabled:opacity-50"
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>{publishLoading ? 'Processing...' : isAdmin ? 'Publish Now' : 'Submit for Review'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
