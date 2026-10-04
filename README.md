@@ -132,9 +132,6 @@ No reward rules or bank terms are hardcoded — every card, category multiplier,
    npm run build
    npm run start
    ```
-
-For detailed production hosting steps (Vercel & Supabase Cloud) and the community card publishing workflow, see the [Publishing & Deployment Guide](PUBLISHING_GUIDE.md).
-
 ---
 
 ## 🐳 Testing with Local Supabase Docker & Auth
