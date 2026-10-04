@@ -51,27 +51,27 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3.5 bg-zinc-900/70 border border-zinc-800 rounded-2xl">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3.5 bg-[#141210] border border-stone-800/90 rounded-2xl shadow-sm">
       {/* Month Stepper */}
       <div className="flex items-center space-x-2">
         <button
           onClick={handlePrevMonth}
-          className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
+          className="p-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-300 border border-stone-800 transition-colors active:scale-[0.98]"
           title="Previous Month"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
 
-        <div className="flex items-center space-x-2 px-3 py-1 bg-zinc-950 rounded-xl border border-zinc-800">
-          <Calendar className="w-3.5 h-3.5 text-amber-400" />
-          <span className="font-semibold text-white text-sm tracking-wide">
+        <div className="flex items-center space-x-2.5 px-3.5 py-1.5 bg-[#0C0A09] rounded-xl border border-stone-800">
+          <Calendar className="w-3.5 h-3.5 text-[#C5A880]" />
+          <span className="font-serif font-medium text-stone-100 text-sm tracking-wide">
             {MONTH_NAMES[month - 1]} {year}
           </span>
         </div>
 
         <button
           onClick={handleNextMonth}
-          className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
+          className="p-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-stone-300 border border-stone-800 transition-colors active:scale-[0.98]"
           title="Next Month"
         >
           <ChevronRight className="w-4 h-4" />
@@ -80,7 +80,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
         {!isCurrentMonth() && (
           <button
             onClick={handleCurrentMonth}
-            className="text-xs px-2.5 py-1 text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg transition-colors font-medium border border-amber-500/20"
+            className="text-xs px-2.5 py-1 text-[#C5A880] hover:text-[#EAE4DC] bg-stone-900 hover:bg-stone-800 rounded-xl transition-all font-mono border border-stone-800 active:scale-[0.98]"
           >
             Today
           </button>
@@ -89,33 +89,33 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
 
       {/* Date Basis Toggle */}
       <div className="flex items-center space-x-2">
-        <div className="text-xs text-zinc-400 flex items-center space-x-1">
-          <span>Date Basis:</span>
+        <div className="text-[11px] text-stone-400 flex items-center space-x-1.5 font-sans">
+          <span>Tracking Basis</span>
           <span
             title="SmartBuy caps and Amex milestones track strictly by settled posting date. Transactions swiped on the 31st settling on the 1st roll into next month."
-            className="cursor-help text-zinc-500 hover:text-zinc-300"
+            className="cursor-help text-stone-400 hover:text-stone-300"
           >
             <Info className="w-3.5 h-3.5" />
           </span>
         </div>
 
-        <div className="flex bg-zinc-950 p-1 rounded-xl border border-zinc-800 text-xs">
+        <div className="flex bg-[#0C0A09] p-1 rounded-xl border border-stone-800 text-xs">
           <button
             onClick={() => onChangeTrackingBasis('posting_date')}
-            className={`px-3 py-1 rounded-lg font-medium transition-all ${
+            className={`px-3 py-1 rounded-lg font-medium transition-all text-[11px] font-mono ${
               trackingBasis === 'posting_date'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-[#24201D] text-[#EAE4DC] border border-stone-700/80 shadow-sm'
+                : 'text-stone-400 hover:text-stone-300'
             }`}
           >
             Posting Date (Default)
           </button>
           <button
             onClick={() => onChangeTrackingBasis('transaction_date')}
-            className={`px-3 py-1 rounded-lg font-medium transition-all ${
+            className={`px-3 py-1 rounded-lg font-medium transition-all text-[11px] font-mono ${
               trackingBasis === 'transaction_date'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-[#24201D] text-[#EAE4DC] border border-stone-700/80 shadow-sm'
+                : 'text-stone-400 hover:text-stone-300'
             }`}
           >
             Transaction Date

@@ -13,6 +13,9 @@ import { CardTemplateEditorModal } from '../components/CardTemplateEditorModal';
 import { UserCardSettingsModal } from '../components/UserCardSettingsModal';
 import { SettingsModal } from '../components/SettingsModal';
 import { MonthlyReportModal } from '../components/MonthlyReportModal';
+import { AdminPanelModal } from '../components/AdminPanelModal';
+import { FeedbackModal } from '../components/FeedbackModal';
+import { CommunityCatalogModal } from '../components/CommunityCatalogModal';
 
 import {
   UserCard,
@@ -67,6 +70,9 @@ export default function Home() {
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMonthlyReportOpen, setIsMonthlyReportOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
 
   // Initialize data on client load
   useEffect(() => {
@@ -224,10 +230,10 @@ export default function Home() {
 
   if (!isClient) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center text-zinc-400">
-        <div className="flex items-center space-x-2">
-          <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-          <span>Loading CardCap Rewards Engine...</span>
+      <div className="min-h-screen bg-[#0C0A09] flex items-center justify-center text-stone-400">
+        <div className="flex items-center space-x-3">
+          <div className="w-5 h-5 border-2 border-[#C5A880] border-t-transparent rounded-full animate-spin" />
+          <span className="font-serif tracking-tight text-stone-300">Loading CardCap Editorial Engine...</span>
         </div>
       </div>
     );
@@ -236,7 +242,7 @@ export default function Home() {
   const isConfigured = checkSupabaseConfigured();
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-amber-500 selection:text-zinc-950">
+    <div className="min-h-screen bg-[#0C0A09] text-stone-100 flex flex-col font-sans selection:bg-[#C5A880] selection:text-[#0C0A09]">
       {/* Navigation Bar */}
       <Navbar
         onOpenAddTransaction={() => {
@@ -250,6 +256,9 @@ export default function Home() {
         onOpenWallet={() => setIsWalletOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenMonthlyReport={() => setIsMonthlyReportOpen(true)}
+        onOpenFeedback={() => setIsFeedbackOpen(true)}
+        onOpenAdminPanel={() => setIsAdminOpen(true)}
+        onOpenCommunityCatalog={() => setIsCatalogOpen(true)}
         isSupabaseConfigured={isConfigured}
         storageMode={storageMode}
         userEmail={currentUser?.email}
@@ -332,9 +341,9 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-900 py-6 text-center text-xs text-zinc-400">
-        <p>
-          CardCap Rewards & Milestone Tracker • Client-first architecture with configurable rule templates
+      <footer className="border-t border-stone-800/80 bg-[#0C0A09]/60 py-8 text-center text-xs text-stone-500 font-sans">
+        <p className="tracking-wide">
+          CardCap Rewards & Milestone Engine • Warm Editorial Minimalism • Client-first architecture with dynamic bank rule governance
         </p>
       </footer>
 
@@ -360,6 +369,54 @@ export default function Home() {
         selectedTemplateId={editingTemplateId}
         onSaveTemplate={handleSaveTemplate}
         onResetTemplates={handleResetTemplates}
+        userEmail={currentUser?.email}
+        onCardPublished={(publishedCard) => {
+          handleSaveTemplate(publishedCard);
+        }}
+      />
+
+      <AdminPanelModal
+        isOpen={isAdminOpen}
+        onClose={() => {
+          setIsAdminOpen(false);
+          refreshData();
+        }}
+        currentUserEmail={currentUser?.email}
+        onCardPublished={(publishedCard) => {
+          handleSaveTemplate(publishedCard);
+        }}
+      />
+
+      <FeedbackModal
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+        availableCards={cardTemplates}
+        userEmail={currentUser?.email}
+        defaultCardId={activeCardTemplate?.id}
+      />
+
+      <CommunityCatalogModal
+        isOpen={isCatalogOpen}
+        onClose={() => setIsCatalogOpen(false)}
+        catalogTemplates={cardTemplates}
+        userCardTemplateIds={userCards.map((c) => c.cardTemplateId)}
+        onAddCardToWallet={(templateId) => {
+          const t = cardTemplates.find((x) => x.id === templateId);
+          const newCard: UserCard = {
+            id: `uc_${Date.now()}`,
+            cardTemplateId: templateId,
+            nickname: t?.name || 'Community Card',
+            billingCycleDay: 1,
+            createdAt: new Date().toISOString(),
+          };
+          handleSaveUserCard(newCard);
+          setIsCatalogOpen(false);
+        }}
+        onRequestCardUpdate={(template) => {
+          setEditingTemplateId(template.id);
+          setIsCatalogOpen(false);
+          setIsCardRulesOpen(true);
+        }}
       />
 
       <UserCardSettingsModal

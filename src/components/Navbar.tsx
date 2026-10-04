@@ -1,7 +1,18 @@
 'use client';
 
 import React from 'react';
-import { Plus, Sliders, CreditCard, Settings, Sparkles, ShieldCheck, BarChart3 } from 'lucide-react';
+import {
+  Plus,
+  Sliders,
+  CreditCard,
+  Settings,
+  Shield,
+  BarChart3,
+  MessageSquare,
+  Globe,
+  User,
+} from 'lucide-react';
+import { canManageCards, getUserRole } from '../lib/adminAuth';
 
 interface NavbarProps {
   onOpenAddTransaction: () => void;
@@ -9,6 +20,9 @@ interface NavbarProps {
   onOpenWallet: () => void;
   onOpenSettings: () => void;
   onOpenMonthlyReport?: () => void;
+  onOpenFeedback: () => void;
+  onOpenAdminPanel?: () => void;
+  onOpenCommunityCatalog?: () => void;
   isSupabaseConfigured: boolean;
   storageMode?: 'local' | 'supabase';
   userEmail?: string | null;
@@ -20,102 +34,130 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenWallet,
   onOpenSettings,
   onOpenMonthlyReport,
+  onOpenFeedback,
+  onOpenAdminPanel,
+  onOpenCommunityCatalog,
   isSupabaseConfigured,
   storageMode = 'local',
   userEmail,
 }) => {
+  const isAdminUser = canManageCards(userEmail);
+  const role = getUserRole(userEmail);
+
   return (
-    <header className="sticky top-0 z-30 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
+    <header className="sticky top-0 z-30 border-b border-stone-800/80 bg-[#0C0A09]/90 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Brand */}
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-200 flex items-center justify-center shadow-lg shadow-amber-500/20 text-zinc-950 font-black text-xl">
-            💳
+        {/* Brand - Warm Editorial Luxury */}
+        <div className="flex items-center space-x-3.5">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#24201D] to-[#141210] border border-stone-700/60 flex items-center justify-center shadow-sm">
+            <span className="font-serif font-bold text-base text-[#C5A880]">C</span>
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-bold text-lg text-white tracking-tight">CardCap</span>
-              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-zinc-800 text-zinc-300 border border-zinc-700">
-                Rewards Engine
+              <span className="font-serif font-medium text-lg text-stone-100 tracking-tight">
+                CardCap
+              </span>
+              <span className="text-[9px] px-2 py-0.5 rounded-full font-mono uppercase tracking-widest bg-stone-900 border border-stone-800 text-stone-400">
+                Editorial
               </span>
             </div>
-            <p className="text-xs text-zinc-400 hidden sm:block">
-              Multi-Card Accrual, Sub-Cap Limits & Milestone Tracker
+            <p className="text-[11px] text-stone-400 hidden sm:block tracking-normal font-sans">
+              Precision Accrual, Sub-Cap Guard & Milestone Engine
             </p>
           </div>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center space-x-2 sm:space-x-3">
+        {/* Action Controls - Quiet Luxury */}
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
           {/* Storage / Auth Status indicator */}
           <button
             onClick={onOpenSettings}
-            className={`hidden md:flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
+            className={`hidden md:flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-xl border transition-all ${
               storageMode === 'supabase' && userEmail
-                ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300 hover:bg-emerald-900/40'
-                : storageMode === 'supabase'
-                ? 'bg-indigo-950/40 border-indigo-800/60 text-indigo-300 hover:bg-indigo-900/40'
-                : 'bg-zinc-900 border-zinc-700/80 text-zinc-300 hover:bg-zinc-800'
+                ? 'bg-stone-900/80 border-stone-700 text-stone-200 hover:border-stone-500'
+                : 'bg-stone-950 border-stone-800 text-stone-400 hover:text-stone-200 hover:border-stone-700'
             }`}
-            title="Click to view storage, auth & sync settings"
+            title="Storage & Account"
           >
-            {storageMode === 'supabase' ? (
-              userEmail ? (
-                <>
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="max-w-[120px] truncate">{userEmail}</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Sign In (Supabase)</span>
-                </>
-              )
-            ) : (
-              <>
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>Local (Device Only)</span>
-              </>
-            )}
+            <User className="w-3.5 h-3.5 text-[#C5A880]" />
+            <span className="max-w-[130px] truncate text-[11px] font-mono">
+              {userEmail || (storageMode === 'supabase' ? 'Cloud Sync' : 'Local Storage')}
+            </span>
           </button>
+
+          {/* Community Catalog button */}
+          {onOpenCommunityCatalog && (
+            <button
+              onClick={onOpenCommunityCatalog}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-stone-300 bg-stone-900/60 hover:bg-stone-800 border border-stone-800 hover:border-stone-700 transition-all hover:text-stone-100 active:scale-[0.98]"
+              title="Explore Community Approved Cards"
+            >
+              <Globe className="w-3.5 h-3.5 text-[#C5A880]" />
+              <span className="hidden sm:inline">Catalog</span>
+            </button>
+          )}
 
           {/* Monthly Cap Report button */}
           {onOpenMonthlyReport && (
             <button
               onClick={onOpenMonthlyReport}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-300 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 transition-all hover:text-white"
-              title="View Multi-Month Cap Report & Compare"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-stone-300 bg-stone-900/60 hover:bg-stone-800 border border-stone-800 hover:border-stone-700 transition-all hover:text-stone-100 active:scale-[0.98]"
+              title="Multi-Month Cap & Milestone Analysis"
             >
-              <BarChart3 className="w-3.5 h-3.5 text-blue-400" />
-              <span className="hidden sm:inline">Cap Report</span>
+              <BarChart3 className="w-3.5 h-3.5 text-stone-400" />
+              <span className="hidden sm:inline">Analytics</span>
             </button>
           )}
 
           {/* Card Rules & Devaluation Editor button */}
           <button
             onClick={onOpenCardRules}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-300 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 transition-all hover:text-white"
-            title="Edit Caps, Multipliers & Rules (Handles Devaluation/Revaluation)"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-stone-300 bg-stone-900/60 hover:bg-stone-800 border border-stone-800 hover:border-stone-700 transition-all hover:text-stone-100 active:scale-[0.98]"
+            title="Edit Caps, Multipliers & Rules"
           >
-            <Sliders className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">Rules & Templates</span>
+            <Sliders className="w-3.5 h-3.5 text-stone-400" />
+            <span className="hidden sm:inline">Rules</span>
           </button>
 
           {/* My Cards / Wallet button */}
           <button
             onClick={onOpenWallet}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-300 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 transition-all hover:text-white"
-            title="Manage Cards in Wallet"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-stone-300 bg-stone-900/60 hover:bg-stone-800 border border-stone-800 hover:border-stone-700 transition-all hover:text-stone-100 active:scale-[0.98]"
+            title="Manage Wallet"
           >
-            <CreditCard className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="hidden sm:inline">My Cards</span>
+            <CreditCard className="w-3.5 h-3.5 text-stone-400" />
+            <span className="hidden sm:inline">Wallet</span>
           </button>
+
+          {/* Community Feedback Button */}
+          <button
+            onClick={onOpenFeedback}
+            className="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-medium text-stone-400 hover:text-stone-200 bg-stone-900/40 hover:bg-stone-800 border border-stone-800 hover:border-stone-700 transition-all active:scale-[0.98]"
+            title="Send Feedback or Report Devaluation"
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-[#C5A880]" />
+            <span className="hidden sm:inline">Feedback</span>
+          </button>
+
+          {/* Admin Panel Button (Visible to Admins and Super Admins) */}
+          {isAdminUser && onOpenAdminPanel && (
+            <button
+              onClick={onOpenAdminPanel}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-[#C5A880]/15 hover:bg-[#C5A880]/25 text-[#EAE4DC] border border-[#C5A880]/30 transition-all active:scale-[0.98]"
+              title="Open Admin & Governance Terminal"
+            >
+              <Shield className="w-3.5 h-3.5 text-[#C5A880]" />
+              <span className="hidden sm:inline font-mono font-semibold uppercase text-[11px]">
+                Admin
+              </span>
+            </button>
+          )}
 
           {/* Settings button */}
           <button
             onClick={onOpenSettings}
-            className="p-2 rounded-lg text-zinc-400 hover:text-zinc-200 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 transition-colors"
-            title="Settings & Data Backup"
+            className="p-2 rounded-xl text-stone-400 hover:text-stone-200 bg-stone-900/60 hover:bg-stone-800 border border-stone-800 hover:border-stone-700 transition-colors"
+            title="Settings & Data Transfer"
           >
             <Settings className="w-4 h-4" />
           </button>
@@ -123,10 +165,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Primary Quick Add Transaction button */}
           <button
             onClick={onOpenAddTransaction}
-            className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-zinc-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 shadow-md shadow-amber-500/25 transition-all transform active:scale-95"
+            className="flex items-center space-x-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs font-medium text-stone-950 bg-stone-100 hover:bg-stone-200 transition-all shadow-sm active:scale-[0.98] cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
-            <span>Add Transaction</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span className="font-sans font-semibold">New Entry</span>
           </button>
         </div>
       </div>

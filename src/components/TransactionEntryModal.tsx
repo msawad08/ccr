@@ -129,43 +129,43 @@ export const TransactionEntryModal: React.FC<TransactionEntryModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+      <div className="bg-[#141210] border border-stone-800 rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
-              {isRefund ? <RotateCcw className="w-4 h-4 text-red-400" /> : <Sparkles className="w-4 h-4" />}
+        <div className="flex items-center justify-between pb-3.5 border-b border-stone-800/80">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 rounded-xl bg-stone-900 border border-stone-800 text-[#C5A880] flex items-center justify-center font-bold">
+              {isRefund ? <RotateCcw className="w-4 h-4 text-[#B85D43]" /> : <Sparkles className="w-4 h-4" />}
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">
+              <h3 className="font-serif font-medium text-base text-stone-100">
                 {editTransaction ? 'Edit Transaction' : isRefund ? 'Record Refund / Reversal' : 'Add New Transaction'}
               </h3>
-              <p className="text-xs text-zinc-400">
-                Calculates live rewards, milestone qualifications, and sub-caps
+              <p className="text-xs text-stone-400 font-sans">
+                Real-time accrual calculation, milestone tracking, and sub-cap simulation
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="p-1.5 rounded-xl text-stone-400 hover:text-stone-100 hover:bg-stone-800 transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 font-sans">
           {/* Card & Category row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Card Picker */}
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1">
+              <label className="block text-xs font-medium text-stone-300 mb-1 font-sans">
                 Credit Card
               </label>
               <select
                 value={selectedUserCardId}
                 onChange={(e) => setSelectedUserCardId(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
+                className="w-full bg-[#0C0A09] border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200 focus:outline-none focus:border-[#C5A880] font-sans"
               >
                 {userCards.map((card) => (
                   <option key={card.id} value={card.id}>
@@ -177,13 +177,13 @@ export const TransactionEntryModal: React.FC<TransactionEntryModalProps> = ({
 
             {/* Category / Reward Multiplier Rule */}
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1">
+              <label className="block text-xs font-medium text-stone-300 mb-1 font-sans">
                 Category & Multiplier
               </label>
               <select
                 value={ruleId}
                 onChange={(e) => setRuleId(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 font-medium"
+                className="w-full bg-[#0C0A09] border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200 focus:outline-none focus:border-[#C5A880] font-medium"
               >
                 {cardTemplate.rewardRules.map((r) => (
                   <option key={r.id} value={r.id}>
@@ -197,7 +197,7 @@ export const TransactionEntryModal: React.FC<TransactionEntryModalProps> = ({
           {/* Merchant & Amount row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1">
+              <label className="block text-xs font-medium text-stone-300 mb-1 font-sans">
                 Merchant / Brand
               </label>
               <input
@@ -206,16 +206,16 @@ export const TransactionEntryModal: React.FC<TransactionEntryModalProps> = ({
                 placeholder="e.g., GyFTR Amazon, Swiggy, HPCL Fuel"
                 value={merchant}
                 onChange={(e) => setMerchant(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                className="w-full bg-[#0C0A09] border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200 placeholder-stone-500 focus:outline-none focus:border-[#C5A880]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1">
+              <label className="block text-xs font-medium text-stone-300 mb-1 font-sans">
                 Amount (₹)
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-xs">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 font-mono text-xs">
                   ₹
                 </span>
                 <input
@@ -226,7 +226,7 @@ export const TransactionEntryModal: React.FC<TransactionEntryModalProps> = ({
                   placeholder="0.00"
                   value={amountStr}
                   onChange={(e) => setAmountStr(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-7 pr-3 py-2 text-xs font-mono font-bold text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                  className="w-full bg-[#0C0A09] border border-stone-800 rounded-xl pl-7 pr-3 py-2 text-xs font-mono font-medium text-stone-100 placeholder-stone-500 focus:outline-none focus:border-[#C5A880]"
                 />
               </div>
             </div>
@@ -235,7 +235,7 @@ export const TransactionEntryModal: React.FC<TransactionEntryModalProps> = ({
           {/* Dates row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1">
+              <label className="block text-xs font-medium text-stone-300 mb-1 font-sans">
                 Transaction Date (Swipe Day)
               </label>
               <input
@@ -248,21 +248,21 @@ export const TransactionEntryModal: React.FC<TransactionEntryModalProps> = ({
                     setPostingDate(e.target.value);
                   }
                 }}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
+                className="w-full bg-[#0C0A09] border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200 focus:outline-none focus:border-[#C5A880] font-mono"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-zinc-400">
+                <label className="text-xs font-medium text-stone-300 font-sans">
                   Posting Date (Settlement)
                 </label>
-                <label className="flex items-center space-x-1 cursor-pointer text-[11px] text-zinc-400 hover:text-amber-400">
+                <label className="flex items-center space-x-1 cursor-pointer text-[11px] text-stone-400 hover:text-stone-200 font-mono">
                   <input
                     type="checkbox"
                     checked={isPendingSettlement}
                     onChange={(e) => setIsPendingSettlement(e.target.checked)}
-                    className="rounded text-amber-500 focus:ring-0 cursor-pointer"
+                    className="rounded text-[#C5A880] focus:ring-0 cursor-pointer"
                   />
                   <span>Pending</span>
                 </label>
@@ -272,24 +272,24 @@ export const TransactionEntryModal: React.FC<TransactionEntryModalProps> = ({
                 disabled={isPendingSettlement}
                 value={isPendingSettlement ? '' : postingDate}
                 onChange={(e) => setPostingDate(e.target.value)}
-                className={`w-full bg-zinc-950 border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 ${
+                className={`w-full bg-[#0C0A09] border rounded-xl px-3 py-2 text-xs text-stone-200 focus:outline-none focus:border-[#C5A880] font-mono ${
                   isPendingSettlement
-                    ? 'opacity-40 border-zinc-800 cursor-not-allowed'
-                    : 'border-zinc-800'
+                    ? 'opacity-40 border-stone-800 cursor-not-allowed'
+                    : 'border-stone-800'
                 }`}
               />
             </div>
           </div>
 
           {/* Refund Toggle & Notes */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-950/60 border border-zinc-800">
-              <div className="flex items-center space-x-2">
-                <RotateCcw className={`w-4 h-4 ${isRefund ? 'text-red-400' : 'text-zinc-500'}`} />
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-[#0C0A09] border border-stone-800">
+              <div className="flex items-center space-x-2.5">
+                <RotateCcw className={`w-4 h-4 ${isRefund ? 'text-[#B85D43]' : 'text-stone-500'}`} />
                 <div>
-                  <span className="text-xs font-semibold text-white">Mark as Refund / Reversal</span>
-                  <p className="text-[11px] text-zinc-400">
-                    Reverses bonus points and restores spend capacity in the active cap period
+                  <span className="text-xs font-medium text-stone-200">Mark as Refund / Reversal</span>
+                  <p className="text-[11px] text-stone-400 font-sans">
+                    Reverses bonus points and restores capacity in the active cap period
                   </p>
                 </div>
               </div>
@@ -297,12 +297,12 @@ export const TransactionEntryModal: React.FC<TransactionEntryModalProps> = ({
                 type="checkbox"
                 checked={isRefund}
                 onChange={(e) => setIsRefund(e.target.checked)}
-                className="w-4 h-4 rounded text-red-500 focus:ring-0 cursor-pointer"
+                className="w-4 h-4 rounded text-[#B85D43] focus:ring-0 cursor-pointer"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-zinc-400 mb-1">
+              <label className="block text-xs font-medium text-stone-300 mb-1 font-sans">
                 Notes / Reference (Optional)
               </label>
               <input
@@ -310,36 +310,36 @@ export const TransactionEntryModal: React.FC<TransactionEntryModalProps> = ({
                 placeholder="e.g., Booking reference or purpose"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                className="w-full bg-[#0C0A09] border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200 placeholder-stone-500 focus:outline-none focus:border-[#C5A880]"
               />
             </div>
           </div>
 
           {/* DYNAMIC LIVE CALCULATION & CAP WARNING PREVIEW */}
           {numericAmount > 0 && (
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-amber-500/30 space-y-2 shadow-inner">
+            <div className="p-4 rounded-2xl bg-[#0C0A09] border border-stone-800 space-y-2.5 shadow-inner">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-zinc-300 flex items-center space-x-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Real-time Reward Simulation</span>
+                <span className="font-serif font-medium text-stone-300 flex items-center space-x-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#C5A880]" />
+                  <span>Real-time Accrual Simulation</span>
                 </span>
-                <span className="font-mono font-bold text-amber-400 text-sm">
+                <span className="font-mono font-bold text-[#C5A880] text-sm">
                   {simulatedReward.totalPoints >= 0 ? '+' : ''}
                   {formatPoints(simulatedReward.totalPoints)} {cardTemplate.pointName}
                 </span>
               </div>
 
               {/* Breakdown */}
-              <div className="grid grid-cols-3 gap-2 text-[11px] text-zinc-400 pt-1 border-t border-zinc-800">
+              <div className="grid grid-cols-3 gap-2 text-[11px] font-mono text-stone-400 pt-1 border-t border-stone-800">
                 <div>
-                  Base: <strong className="text-white">{formatPoints(simulatedReward.basePoints)}</strong>
+                  Base: <strong className="text-stone-200">{formatPoints(simulatedReward.basePoints)}</strong>
                 </div>
                 <div>
-                  Bonus: <strong className="text-amber-300">{formatPoints(simulatedReward.bonusPoints)}</strong>
+                  Bonus: <strong className="text-[#C5A880]">{formatPoints(simulatedReward.bonusPoints)}</strong>
                 </div>
                 <div>
                   Multiplier:{' '}
-                  <strong className="text-white">
+                  <strong className="text-stone-200">
                     {currentRule.bonusMultiplier > 0 ? `${currentRule.bonusMultiplier + 1}X` : '1X'}
                   </strong>
                 </div>
@@ -347,18 +347,18 @@ export const TransactionEntryModal: React.FC<TransactionEntryModalProps> = ({
 
               {/* Cap Warning Indicator if cap is breached */}
               {simulatedReward.capWarning && (
-                <div className="flex items-start space-x-2 text-[11px] text-amber-300 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
-                  <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                <div className="flex items-start space-x-2 text-[11px] text-[#C28B45] bg-[#241A10] p-2.5 rounded-xl border border-[#593E1B]/50 font-sans">
+                  <AlertTriangle className="w-4 h-4 text-[#C28B45] flex-shrink-0 mt-0.5" />
                   <span>{simulatedReward.capWarning}</span>
                 </div>
               )}
 
               {/* Amex milestone qualification badge */}
               {cardTemplate.id === 'amex_mrcc' && numericAmount >= 1500 && !isRefund && (
-                <div className="flex items-center space-x-1.5 text-[11px] text-cyan-300 bg-cyan-500/10 p-2 rounded-xl border border-cyan-500/20">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
+                <div className="flex items-center space-x-1.5 text-[11px] text-[#769F86] bg-[#132219] p-2.5 rounded-xl border border-emerald-900/40 font-mono">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#769F86]" />
                   <span>
-                    Qualifies as a <strong>₹1,500+ milestone transaction</strong> toward the 1,000 bonus MR goal!
+                    Qualifies as a <strong>₹1,500+ milestone transaction</strong> toward 1,000 bonus MR!
                   </span>
                 </div>
               )}
@@ -366,18 +366,18 @@ export const TransactionEntryModal: React.FC<TransactionEntryModalProps> = ({
           )}
 
           {/* Form Actions */}
-          <div className="flex items-center justify-end space-x-3 pt-3 border-t border-zinc-800">
+          <div className="flex items-center justify-end space-x-3 pt-3.5 border-t border-stone-800/80">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-zinc-200 transition-colors"
+              className="px-4 py-2 text-xs font-medium text-stone-400 hover:text-stone-200 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!merchant.trim() || numericAmount <= 0}
-              className="px-5 py-2 rounded-xl text-xs font-bold text-zinc-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 shadow-md shadow-amber-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2 rounded-xl text-xs font-medium text-[#0C0A09] bg-[#C5A880] hover:bg-[#D4B992] transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
               {editTransaction ? 'Save Changes' : isRefund ? 'Record Refund' : 'Record Transaction'}
             </button>

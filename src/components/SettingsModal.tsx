@@ -4,11 +4,9 @@ import React, { useState, useEffect } from 'react';
 import {
   X,
   Database,
-  Download,
   Upload,
   RotateCcw,
   ShieldCheck,
-  Sparkles,
   Check,
   AlertCircle,
   FileSpreadsheet,
@@ -84,7 +82,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       const mode = getStorageMode();
       setStorageMode(mode);
 
-      // Verify Supabase configuration (checks inlined env vars and /api/supabase-config)
+      // Verify Supabase configuration
       checkAndInitSupabase().then((res) => {
         setSupabaseReady(res.configured);
         setCommentedWarning(Boolean(res.hasCommentedLines));
@@ -130,9 +128,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         if (res.error) {
           setAuthError(res.error.message);
         } else {
-          setAuthSuccess(
-            'Account created! If confirmation is required, please check your inbox (or local Inbucket at http://127.0.0.1:54324).'
-          );
+          setAuthSuccess('Account created! Please check your inbox to confirm.');
           if (res.user) {
             setCurrentUser(res.user);
           }
@@ -149,10 +145,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         if (res.error) {
           setAuthError(res.error.message);
         } else {
-          setAuthSuccess('Signed in successfully!');
+          setAuthSuccess('Signed in successfully.');
           if (res.user) {
             setCurrentUser(res.user);
-            // Auto fetch user data
             fetchUserDataFromSupabase(res.user.id).then(() => {
               onDataImported();
             });
@@ -178,9 +173,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       if (res.error) {
         setAuthError(res.error.message);
       } else {
-        setAuthSuccess(
-          'Magic link sent! Check your email (or local Inbucket at http://127.0.0.1:54324) to log in instantly.'
-        );
+        setAuthSuccess('Magic link sent! Check your inbox to sign in instantly.');
       }
     } catch (err: any) {
       setAuthError(err?.message || 'Failed to send magic link.');
@@ -209,7 +202,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const handleSignOut = async () => {
     await signOutSupabase();
     setCurrentUser(null);
-    setAuthSuccess('Signed out of Supabase.');
+    setAuthSuccess('Signed out.');
     setTimeout(() => setAuthSuccess(null), 2500);
   };
 
@@ -219,14 +212,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setSyncMessage(null);
 
     try {
-      // Push local data up, then pull
       const pushRes = await pushLocalDataToSupabase(currentUser.id);
       if (!pushRes.success) {
         setSyncMessage(`Push error: ${pushRes.error}`);
       } else {
         await fetchUserDataFromSupabase(currentUser.id);
         onDataImported();
-        setSyncMessage('Data synced successfully with Supabase!');
+        setSyncMessage('Data synced successfully with cloud storage.');
         setTimeout(() => setSyncMessage(null), 3500);
       }
     } catch (err: any) {
@@ -259,28 +251,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       }
     };
     reader.readAsText(file);
-    e.target.value = ''; // Reset input
+    e.target.value = '';
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-6 max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-[#141210] border border-stone-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl space-y-6 max-h-[92vh] overflow-y-auto text-stone-100">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
-              <Database className="w-4 h-4" />
+        <div className="flex items-center justify-between pb-4 border-b border-stone-800/80">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-2xl bg-stone-900 border border-stone-700/60 flex items-center justify-center text-[#C5A880] shadow-sm">
+              <Database className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">Storage Mode & Data Sync</h3>
-              <p className="text-xs text-zinc-400">
-                Choose between offline local storage or multi-device Supabase cloud sync
-              </p>
+              <span className="text-[10px] font-mono tracking-widest text-[#C5A880] uppercase">
+                System Preferences
+              </span>
+              <h3 className="text-xl font-serif tracking-tight text-stone-100">
+                Storage & Governance
+              </h3>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="p-1.5 rounded-full text-stone-400 hover:text-stone-100 hover:bg-stone-900 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -288,7 +282,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* SECTION 1: Storage Mode Selector Cards */}
         <div className="space-y-3">
-          <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
+          <h4 className="text-xs font-mono tracking-wider uppercase text-stone-400">
             Select Data Storage & Sync Mode
           </h4>
 
@@ -296,150 +290,128 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             {/* OPTION A: Local Storage */}
             <div
               onClick={() => handleSelectMode('local')}
-              className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between space-y-3 ${
+              className={`p-5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between space-y-3 ${
                 storageMode === 'local'
-                  ? 'bg-amber-950/20 border-amber-500/50 shadow-md shadow-amber-500/10 ring-1 ring-amber-500/30'
-                  : 'bg-zinc-950/60 border-zinc-800 hover:border-zinc-700'
+                  ? 'bg-stone-900 border-[#C5A880]/80 shadow-md ring-1 ring-[#C5A880]/30'
+                  : 'bg-stone-950/60 border-stone-800/80 hover:border-stone-700'
               }`}
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <HardDrive className={`w-5 h-5 ${storageMode === 'local' ? 'text-amber-400' : 'text-zinc-400'}`} />
-                    <span className="text-sm font-bold text-white">Local Storage</span>
+                    <HardDrive className={`w-4 h-4 ${storageMode === 'local' ? 'text-[#C5A880]' : 'text-stone-400'}`} />
+                    <span className="text-sm font-medium text-stone-100 font-serif">Local Storage</span>
                   </div>
                   {storageMode === 'local' ? (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[#C5A880]/20 text-[#EAE4DC] border border-[#C5A880]/40">
                       ACTIVE
                     </span>
                   ) : (
-                    <span className="text-[10px] text-zinc-500">Offline Only</span>
+                    <span className="text-[10px] text-stone-500 font-mono">Offline Only</span>
                   )}
                 </div>
 
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Fast, zero-setup offline storage kept directly inside this browser.
+                <p className="text-xs text-stone-400 leading-relaxed">
+                  Fast, zero-setup storage retained solely inside this local browser.
                 </p>
               </div>
 
               {/* Warning Notice Box */}
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-1.5 text-[11px] text-amber-300/90">
-                <div className="flex items-center space-x-1 font-semibold text-amber-400">
-                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>Important Device Notice:</span>
+              <div className="p-3 rounded-xl bg-stone-950/60 border border-stone-800 space-y-1 text-[11px] text-stone-400">
+                <div className="flex items-center space-x-1.5 font-medium text-stone-300">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400/80" />
+                  <span>Device Specific:</span>
                 </div>
-                <ul className="list-disc list-inside space-y-0.5 text-zinc-400 text-[11px]">
-                  <li><strong className="text-zinc-300">Device-specific only:</strong> Does not sync to other phones or PCs.</li>
-                  <li><strong className="text-amber-300">Risk of Data Loss:</strong> Clearing browser data/cookies will erase all transactions.</li>
-                  <li>Use the <strong>JSON5 / Excel Export</strong> below to backup or move data across devices.</li>
-                </ul>
+                <p className="text-[11px] text-stone-400 leading-relaxed">
+                  Data will not sync to your other devices and can be erased if browser cache is cleared. Use the export below to transfer records.
+                </p>
               </div>
             </div>
 
             {/* OPTION B: Supabase Cloud Sync */}
             <div
               onClick={() => handleSelectMode('supabase')}
-              className={`p-4 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between space-y-3 ${
+              className={`p-5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between space-y-3 ${
                 storageMode === 'supabase'
-                  ? 'bg-emerald-950/20 border-emerald-500/50 shadow-md shadow-emerald-500/10 ring-1 ring-emerald-500/30'
-                  : 'bg-zinc-950/60 border-zinc-800 hover:border-zinc-700'
+                  ? 'bg-stone-900 border-[#C5A880]/80 shadow-md ring-1 ring-[#C5A880]/30'
+                  : 'bg-stone-950/60 border-stone-800/80 hover:border-stone-700'
               }`}
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <Cloud className={`w-5 h-5 ${storageMode === 'supabase' ? 'text-emerald-400' : 'text-zinc-400'}`} />
-                    <span className="text-sm font-bold text-white">Supabase Sync</span>
+                    <Cloud className={`w-4 h-4 ${storageMode === 'supabase' ? 'text-[#C5A880]' : 'text-stone-400'}`} />
+                    <span className="text-sm font-medium text-stone-100 font-serif">Supabase Cloud</span>
                   </div>
                   {storageMode === 'supabase' ? (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded-full bg-[#C5A880]/20 text-[#EAE4DC] border border-[#C5A880]/40">
                       ACTIVE
                     </span>
                   ) : (
-                    <span className="text-[10px] text-zinc-500">Multi-Device</span>
+                    <span className="text-[10px] text-stone-500 font-mono">Multi-Device</span>
                   )}
                 </div>
 
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Real-time cloud database backup powered by Supabase (PostgreSQL with Row Level Security).
+                <p className="text-xs text-stone-400 leading-relaxed">
+                  Real-time database backup with multi-device sync and Row Level Security.
                 </p>
               </div>
 
               {/* Benefits Box */}
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1.5 text-[11px] text-emerald-300/90">
-                <div className="flex items-center space-x-1 font-semibold text-emerald-400">
-                  <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span>Cloud & Multi-Device Sync:</span>
+              <div className="p-3 rounded-xl bg-stone-950/60 border border-stone-800 space-y-1 text-[11px] text-stone-400">
+                <div className="flex items-center space-x-1.5 font-medium text-stone-300">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#C5A880]" />
+                  <span>Cloud Synchronized:</span>
                 </div>
-                <ul className="list-disc list-inside space-y-0.5 text-zinc-400 text-[11px]">
-                  <li><strong className="text-zinc-300">Syncs Everywhere:</strong> Access the same wallet and caps on any device.</li>
-                  <li><strong className="text-emerald-300">Safe from Cache Clearing:</strong> Records are saved in the cloud.</li>
-                  <li>Works with <strong>Supabase Cloud</strong> or local <strong>Supabase Docker</strong>.</li>
-                </ul>
+                <p className="text-[11px] text-stone-400 leading-relaxed">
+                  Access the same wallet and accruals across mobile and desktop securely.
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* SECTION 2: Supabase Authentication Section (When Supabase Mode is Active) */}
+        {/* SECTION 2: Supabase Authentication Section */}
         {storageMode === 'supabase' && (
-          <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-4">
+          <div className="p-5 rounded-2xl bg-stone-950/80 border border-stone-800 space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <h4 className="text-xs font-mono font-semibold text-stone-200 uppercase tracking-wider flex items-center space-x-2">
+                <ShieldCheck className="w-4 h-4 text-[#C5A880]" />
                 <span>Supabase Account & Sync</span>
               </h4>
-              <span className={`text-[11px] px-2 py-0.5 rounded-md font-mono ${supabaseReady ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                {supabaseReady ? 'Configured in .env' : 'Missing .env Credentials'}
-              </span>
             </div>
 
             {!supabaseReady ? (
-              <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-400 space-y-2">
-                <p className="text-amber-400 font-semibold flex items-center space-x-1">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  <span>Environment variables required</span>
-                </p>
-
-                {commentedWarning && (
-                  <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] space-y-1">
-                    <p className="font-semibold text-amber-200">Commented lines detected in .env.local</p>
-                    <p className="text-zinc-300">
-                      Your <code className="text-amber-300 font-mono">.env.local</code> has lines prefixed with <code className="text-amber-300 font-mono">#</code>. Please remove the <code className="text-amber-300 font-mono">#</code> prefix so Next.js can load them.
-                    </p>
-                  </div>
-                )}
-
-                <p className="text-[11px]">
-                  To use Supabase Cloud or Local Docker, add the following to your <code className="text-white">.env.local</code> file:
-                </p>
-                <div className="p-2 rounded-lg bg-zinc-950 font-mono text-[10px] text-zinc-300">
-                  NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321<br />
-                  NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6...
+              process.env.NODE_ENV === 'development' ? (
+                <div className="p-3 rounded-xl bg-stone-900 border border-stone-800 text-xs text-stone-400 space-y-2">
+                  <p className="text-amber-400 font-semibold flex items-center space-x-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    <span>Development Note: Credentials required</span>
+                  </p>
+                  <p className="text-[11px]">
+                    To use Supabase Cloud or Local Docker, ensure credentials are set in <code className="text-stone-200">.env.local</code>.
+                  </p>
                 </div>
-                <p className="text-[11px] text-zinc-500">
-                  Check <code className="text-zinc-400">supabase/LOCAL_DOCKER_GUIDE.md</code> to start a local Docker instance in 1 command (<code className="text-zinc-300">npx supabase start</code>).
-                </p>
-              </div>
+              ) : null
             ) : currentUser ? (
               /* Signed In Profile View */
               <div className="space-y-3">
-                <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-800/40 flex items-center justify-between">
-                  <div className="flex items-center space-x-2.5">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-xs">
+                <div className="p-4 rounded-xl bg-stone-900 border border-stone-800 flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-full bg-[#C5A880]/15 text-[#C5A880] flex items-center justify-center font-bold text-xs">
                       <UserIcon className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-white">{currentUser.email}</p>
-                      <p className="text-[10px] text-emerald-400 flex items-center space-x-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <p className="text-xs font-mono font-medium text-stone-200">{currentUser.email}</p>
+                      <p className="text-[10px] text-[#C5A880] flex items-center space-x-1 font-mono">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#C5A880] animate-pulse" />
                         <span>Connected & Ready to Sync</span>
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={handleSignOut}
-                    className="flex items-center space-x-1 text-xs text-zinc-400 hover:text-red-400 px-2.5 py-1 rounded-lg border border-zinc-800 hover:border-red-800/50 transition-colors"
+                    className="flex items-center space-x-1 text-xs text-stone-400 hover:text-stone-200 px-3 py-1.5 rounded-xl border border-stone-800 hover:border-stone-700 transition-colors"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Sign Out</span>
@@ -447,20 +419,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 {syncMessage && (
-                  <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 flex items-center space-x-1.5">
-                    <Check className="w-3.5 h-3.5" />
+                  <div className="p-3 rounded-xl bg-stone-900 border border-[#C5A880]/30 text-xs text-[#EAE4DC] flex items-center space-x-2">
+                    <Check className="w-3.5 h-3.5 text-[#C5A880]" />
                     <span>{syncMessage}</span>
                   </div>
                 )}
 
                 <div className="flex items-center justify-between pt-1">
-                  <p className="text-[11px] text-zinc-400">
+                  <p className="text-[11px] text-stone-400">
                     Push local transactions and cards to Supabase or pull latest records.
                   </p>
                   <button
                     onClick={handleSyncNow}
                     disabled={syncLoading}
-                    className="flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold text-zinc-950 bg-emerald-400 hover:bg-emerald-300 transition-colors shadow-sm disabled:opacity-50"
+                    className="flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-medium text-stone-950 bg-stone-100 hover:bg-stone-200 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer shadow-sm"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${syncLoading ? 'animate-spin' : ''}`} />
                     <span>{syncLoading ? 'Syncing...' : 'Sync to Cloud Now'}</span>
@@ -470,17 +442,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             ) : (
               /* Auth Form (Sign In / Sign Up) */
               <div className="space-y-3">
-                <div className="flex border-b border-zinc-800 text-xs">
+                <div className="flex border-b border-stone-800 text-xs">
                   <button
                     onClick={() => {
                       setAuthTab('signin');
                       setAuthError(null);
                       setAuthSuccess(null);
                     }}
-                    className={`pb-2 px-3 font-semibold border-b-2 transition-colors ${
+                    className={`pb-2 px-3 font-medium border-b-2 transition-colors ${
                       authTab === 'signin'
-                        ? 'text-emerald-400 border-emerald-400'
-                        : 'text-zinc-400 border-transparent hover:text-white'
+                        ? 'text-[#C5A880] border-[#C5A880]'
+                        : 'text-stone-400 border-transparent hover:text-stone-200'
                     }`}
                   >
                     Sign In
@@ -491,26 +463,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       setAuthError(null);
                       setAuthSuccess(null);
                     }}
-                    className={`pb-2 px-3 font-semibold border-b-2 transition-colors ${
+                    className={`pb-2 px-3 font-medium border-b-2 transition-colors ${
                       authTab === 'signup'
-                        ? 'text-emerald-400 border-emerald-400'
-                        : 'text-zinc-400 border-transparent hover:text-white'
+                        ? 'text-[#C5A880] border-[#C5A880]'
+                        : 'text-stone-400 border-transparent hover:text-stone-200'
                     }`}
                   >
-                    Create Account (Sign Up)
+                    Create Account
                   </button>
                 </div>
 
                 {authError && (
-                  <div className="p-2.5 rounded-xl bg-red-950/40 border border-red-800/60 text-xs text-red-300 flex items-center space-x-2">
+                  <div className="p-3 rounded-xl bg-red-950/40 border border-red-800/60 text-xs text-red-300 flex items-center space-x-2">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
                     <span>{authError}</span>
                   </div>
                 )}
 
                 {authSuccess && (
-                  <div className="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-800/60 text-xs text-emerald-300 flex items-center space-x-2">
-                    <Check className="w-4 h-4 flex-shrink-0" />
+                  <div className="p-3 rounded-xl bg-stone-900 border border-[#C5A880]/40 text-xs text-[#EAE4DC] flex items-center space-x-2">
+                    <Check className="w-4 h-4 flex-shrink-0 text-[#C5A880]" />
                     <span>{authSuccess}</span>
                   </div>
                 )}
@@ -520,9 +492,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   type="button"
                   onClick={handleGoogleSignIn}
                   disabled={authLoading}
-                  className="w-full flex items-center justify-center space-x-2.5 py-2 px-4 rounded-xl border border-zinc-700 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-100 font-medium text-xs transition-colors shadow-sm disabled:opacity-50 group cursor-pointer"
+                  className="w-full flex items-center justify-center space-x-2.5 py-2.5 px-4 rounded-xl border border-stone-800 bg-stone-900 hover:bg-stone-800 text-stone-200 font-medium text-xs transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
                 >
-                  <svg className="w-4 h-4 shrink-0 transition-transform group-hover:scale-110" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                     <path
                       fill="#4285F4"
                       d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
@@ -543,39 +515,43 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <span>Continue with Google</span>
                 </button>
 
-                <div className="relative flex items-center justify-center my-1.5">
-                  <div className="border-t border-zinc-800 w-full" />
-                  <span className="bg-zinc-950 px-2 text-[10px] text-zinc-500 uppercase tracking-wider absolute">
-                    or use email
+                <div className="relative flex items-center justify-center my-2">
+                  <div className="border-t border-stone-800 w-full" />
+                  <span className="bg-[#141210] px-2 text-[10px] text-stone-500 uppercase tracking-wider font-mono absolute">
+                    or continue with email
                   </span>
                 </div>
 
-                <form onSubmit={handleAuthSubmit} className="space-y-2.5">
+                <form onSubmit={handleAuthSubmit} className="space-y-3">
                   <div>
-                    <label className="block text-[11px] text-zinc-400 mb-1">Email Address</label>
+                    <label className="block text-[11px] font-mono uppercase text-stone-400 mb-1">
+                      Email Address
+                    </label>
                     <div className="relative">
-                      <Mail className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-500" />
+                      <Mail className="w-3.5 h-3.5 absolute left-3 top-2.5 text-stone-500" />
                       <input
                         type="email"
                         placeholder="you@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-400"
+                        className="w-full bg-stone-950 border border-stone-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-stone-200 focus:outline-none focus:border-[#C5A880]"
                         required
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] text-zinc-400 mb-1">Password</label>
+                    <label className="block text-[11px] font-mono uppercase text-stone-400 mb-1">
+                      Password
+                    </label>
                     <div className="relative">
-                      <Key className="w-3.5 h-3.5 absolute left-3 top-2.5 text-zinc-500" />
+                      <Key className="w-3.5 h-3.5 absolute left-3 top-2.5 text-stone-500" />
                       <input
                         type="password"
                         placeholder="••••••••"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-400"
+                        className="w-full bg-stone-950 border border-stone-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-stone-200 focus:outline-none focus:border-[#C5A880]"
                         required
                       />
                     </div>
@@ -586,7 +562,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       type="button"
                       onClick={handleMagicLink}
                       disabled={authLoading}
-                      className="text-[11px] text-zinc-400 hover:text-emerald-400 underline transition-colors"
+                      className="text-[11px] text-stone-400 hover:text-stone-200 underline transition-colors"
                     >
                       Send Magic Link instead
                     </button>
@@ -594,7 +570,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       type="submit"
                       disabled={authLoading}
-                      className="flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold text-zinc-950 bg-emerald-400 hover:bg-emerald-300 transition-colors disabled:opacity-50"
+                      className="flex items-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-medium text-stone-950 bg-stone-100 hover:bg-stone-200 transition-all active:scale-[0.98] disabled:opacity-50"
                     >
                       <LogIn className="w-3.5 h-3.5" />
                       <span>{authLoading ? 'Processing...' : authTab === 'signin' ? 'Sign In' : 'Sign Up'}</span>
@@ -607,25 +583,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         )}
 
         {/* SECTION 3: Multi-Format Data Export & Import */}
-        <div className="space-y-3 pt-2 border-t border-zinc-800">
+        <div className="space-y-3 pt-3 border-t border-stone-800/80">
           <div>
-            <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-wider flex items-center space-x-1.5">
-              <span>Export & Import (Transfer Between Devices)</span>
+            <h4 className="text-xs font-mono tracking-wider uppercase text-stone-400">
+              Export & Import (Transfer Between Devices)
             </h4>
-            <p className="text-[11px] text-zinc-400 mt-0.5">
-              Export your full card rules, custom multipliers, caps, and transactions to JSON5 or Excel. Import JSON5 on any other device.
+            <p className="text-[11px] text-stone-400 mt-0.5">
+              Export card rules, custom multipliers, caps, and transactions to JSON5, Excel, or CSV.
             </p>
           </div>
 
           {importStatus && (
-            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 flex items-center space-x-2">
-              <Check className="w-4 h-4 flex-shrink-0" />
+            <div className="p-3 rounded-xl bg-stone-900 border border-[#C5A880]/30 text-xs text-[#EAE4DC] flex items-center space-x-2">
+              <Check className="w-4 h-4 flex-shrink-0 text-[#C5A880]" />
               <span>{importStatus}</span>
             </div>
           )}
 
           {importError && (
-            <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-300 flex items-center space-x-2">
+            <div className="p-3 rounded-xl bg-red-950/40 border border-red-800/60 text-xs text-red-300 flex items-center space-x-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{importError}</span>
             </div>
@@ -633,41 +609,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* Export Action Buttons */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            {/* Export JSON5 */}
             <button
               onClick={exportDataToJSON5}
-              className="flex items-center justify-center space-x-2 p-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 hover:border-purple-500/40 text-xs text-zinc-200 transition-all font-medium group"
-              title="Export complete database backup as JSON5 format (with comments & full schemas)"
+              className="flex items-center justify-center space-x-2 p-3 rounded-xl bg-stone-950 hover:bg-stone-900 border border-stone-800 hover:border-stone-700 text-xs text-stone-200 transition-all font-medium"
             >
-              <FileCode className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
-              <span>Export as JSON5</span>
+              <FileCode className="w-4 h-4 text-[#C5A880]" />
+              <span>Export JSON5</span>
             </button>
 
-            {/* Export Excel (.xlsx) */}
             <button
               onClick={exportDataToExcel}
-              className="flex items-center justify-center space-x-2 p-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 hover:border-emerald-500/40 text-xs text-zinc-200 transition-all font-medium group"
-              title="Export all transactions, cards, and reward values into Microsoft Excel (.xlsx) workbook"
+              className="flex items-center justify-center space-x-2 p-3 rounded-xl bg-stone-950 hover:bg-stone-900 border border-stone-800 hover:border-stone-700 text-xs text-stone-200 transition-all font-medium"
             >
-              <FileSpreadsheet className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
-              <span>Export to Excel (.xlsx)</span>
+              <FileSpreadsheet className="w-4 h-4 text-stone-400" />
+              <span>Export Excel (.xlsx)</span>
             </button>
 
-            {/* Export CSV */}
             <button
               onClick={exportDataToCSV}
-              className="flex items-center justify-center space-x-2 p-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 hover:border-blue-500/40 text-xs text-zinc-200 transition-all font-medium group"
-              title="Export transactions ledger as universal CSV format"
+              className="flex items-center justify-center space-x-2 p-3 rounded-xl bg-stone-950 hover:bg-stone-900 border border-stone-800 hover:border-stone-700 text-xs text-stone-200 transition-all font-medium"
             >
-              <FileText className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
-              <span>Export as CSV</span>
+              <FileText className="w-4 h-4 text-stone-400" />
+              <span>Export CSV</span>
             </button>
           </div>
 
           {/* Import JSON5 / JSON Backup File */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-2">
-            <label className="w-full sm:w-auto flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-purple-950/60 to-indigo-950/60 hover:from-purple-900/60 hover:to-indigo-900/60 border border-purple-800/60 text-xs text-purple-200 font-bold cursor-pointer transition-all shadow-sm">
-              <Upload className="w-4 h-4 text-purple-400" />
+            <label className="w-full sm:w-auto flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl bg-stone-900 hover:bg-stone-800 border border-stone-700 text-xs text-stone-100 font-medium cursor-pointer transition-all shadow-sm">
+              <Upload className="w-4 h-4 text-[#C5A880]" />
               <span>Import JSON5 Backup from Another Device</span>
               <input
                 type="file"
@@ -682,17 +652,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               onClick={() => {
                 if (
                   confirm(
-                    'Reset all transactions, cards, and rules to default sample data matching the specification?'
+                    'Reset all transactions, cards, and rules to default sample data?'
                   )
                 ) {
                   onResetToSampleData();
                   onClose();
                 }
               }}
-              className="w-full sm:w-auto flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl bg-zinc-950 hover:bg-red-950/30 border border-zinc-800 hover:border-red-800/50 text-xs text-zinc-400 hover:text-red-300 transition-colors"
+              className="w-full sm:w-auto flex items-center justify-center space-x-1.5 py-2.5 px-3 rounded-xl bg-stone-950 hover:bg-stone-900 border border-stone-800 hover:border-stone-700 text-xs text-stone-400 hover:text-stone-200 transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset to Defaults</span>
+              <span>Reset Defaults</span>
             </button>
           </div>
         </div>
