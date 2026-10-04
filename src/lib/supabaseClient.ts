@@ -6,10 +6,25 @@ let runtimeConfig: { url: string; anonKey: string } | null = null;
 const STORAGE_MODE_KEY = 'ccr_storage_mode';
 
 /**
+ * Sanitizes Supabase URL by trimming, removing trailing slashes,
+ * and stripping /rest/v1 if accidentally copied from Data API settings
+ */
+export function cleanSupabaseUrl(rawUrl?: string | null): string {
+  if (!rawUrl) return '';
+  let url = rawUrl.trim();
+  url = url.replace(/\/+$/, '');
+  url = url.replace(/\/rest\/v1\/?$/, '');
+  url = url.replace(/\/+$/, '');
+  return url;
+}
+
+/**
  * Manually set runtime Supabase credentials (e.g. dynamically fetched from /api/supabase-config)
  */
 export function setRuntimeSupabaseConfig(config: { url: string; anonKey: string } | null) {
-  runtimeConfig = config;
+  runtimeConfig = config
+    ? { url: cleanSupabaseUrl(config.url), anonKey: config.anonKey.trim() }
+    : null;
   supabaseInstance = null; // force re-initialization
 }
 
@@ -75,12 +90,12 @@ export function setStorageMode(mode: 'local' | 'supabase'): void {
  */
 export function getSupabaseConfig(): { url: string; anonKey: string } | null {
   if (runtimeConfig?.url && runtimeConfig?.anonKey) {
-    return runtimeConfig;
+    return { url: cleanSupabaseUrl(runtimeConfig.url), anonKey: runtimeConfig.anonKey.trim() };
   }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (url && anonKey && url.trim().length > 0 && anonKey.trim().length > 0) {
-    return { url: url.trim(), anonKey: anonKey.trim() };
+    return { url: cleanSupabaseUrl(url), anonKey: anonKey.trim() };
   }
   return null;
 }

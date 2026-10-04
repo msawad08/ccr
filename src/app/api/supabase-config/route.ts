@@ -68,6 +68,11 @@ export async function GET() {
     }
   }
 
+  // Strip trailing slashes and /rest/v1 if accidentally included
+  if (url) {
+    url = url.replace(/\/+$/, '').replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
+  }
+
   const configured = Boolean(url && anonKey && url.length > 0 && anonKey.length > 0);
 
   return NextResponse.json({
