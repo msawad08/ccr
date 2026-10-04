@@ -66,15 +66,20 @@ To test or use "Continue with Google":
 1. Create an OAuth 2.0 Web Client ID in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
    - Set **Authorized JavaScript origins**: `http://localhost:3000` and `http://127.0.0.1:3000`
    - Set **Authorized redirect URIs**: `http://127.0.0.1:54321/auth/v1/callback`
-2. In `supabase/config.toml`, enable the Google provider:
+2. Add your Google OAuth credentials to your `.env` or `.env.local` file (this file is gitignored, so your secret stays completely safe):
+   ```env
+   SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+   SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET=GOCSPX-your-google-client-secret
+   ```
+3. In `supabase/config.toml`, set `enabled = true`. Notice it references the environment variables safely using `env(...)` so no secrets are ever committed to Git:
    ```toml
    [auth.external.google]
    enabled = true
-   client_id = "your-google-client-id.apps.googleusercontent.com"
-   secret = "your-google-client-secret"
+   client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+   secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
    skip_nonce_check = true
    ```
-3. Restart local Supabase: `npx supabase stop && npx supabase start`.
+4. Restart local Supabase: `npx supabase stop && npx supabase start`.
 
 #### For Supabase Cloud:
 1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials), set Authorized redirect URI to:
